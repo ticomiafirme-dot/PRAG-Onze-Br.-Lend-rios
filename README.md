@@ -43,6 +43,7 @@ Outros comandos:
 ```bash
 npm run build          # site estático em dist/ (caminhos relativos; serve em qualquer hospedagem)
 npm run build:single   # um único HTML autocontido em dist-single/
+npm run build:artifact # página autocontida para publicar no Claude (ranking compartilhado via db/user)
 npm test               # testes do motor (Vitest) com a base real
 npm run e2e            # fluxo completo no navegador (desktop e celular) — requer `npx vite preview --port 4173`
 npm run e2e:modes      # Mistura, Diário, Era Única e Tríplice Coroa
@@ -85,7 +86,7 @@ src/
 scripts/data/  pipeline de coleta e montagem da base
 ```
 
-Não há backend: o ranking é local. A camada `state/storage.ts` concentra a persistência, para que um serviço remoto de ranking possa ser plugado depois.
+Não há backend próprio: o ranking é salvo no dispositivo (`state/storage.ts`). Quando o jogo roda como página publicada no Claude, `state/sharedRanking.ts` também grava as campanhas em um ranking compartilhado entre todos que abrem o link (um documento por jogador, nomes resolvidos pelo perfil). Outro serviço de ranking pode ser plugado no mesmo ponto.
 
 ## Créditos
 
