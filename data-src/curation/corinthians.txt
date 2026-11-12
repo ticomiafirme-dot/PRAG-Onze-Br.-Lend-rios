@@ -1,0 +1,94 @@
+# Curadoria editorial — Corinthians
+# Formato: Nome ou título do artigo | nota [década=nota ...] | posições | observação
+# As décadas vêm SEMPRE da passagem registrada na fonte; a nota só é aplicada onde houve passagem.
+# 1950s
+Gylmar dos Santos Neves | 89 | GOL | Goleiro bicampeão mundial pela Seleção, ídolo da década de 1950.
+Luizinho (futebolista, 1930) | 87 | SA,CA,MEI | O "Pequeno Polegar", um dos maiores artilheiros da história do clube.
+Oswaldo Silva | 86 | CA | O "Cabecinha de Ouro", centroavante goleador dos anos 1950.
+Cláudio Christovam de Pinho | 87 | PD,SA | Ponta-direita, um dos maiores artilheiros da história do clube.
+Roberto Belangero | 82 | VOL,MC
+Idário Sanches Peinado | 80 | LD
+Olavo Martins de Oliveira | 80 | LE,ZAG
+# 1960s–1970s
+Roberto Rivellino | 93 1960s=88 | MEI,MC,PE | "Reizinho do Parque", craque da patada atômica e campeão mundial em 1970.
+Dino Sani | 84 | VOL,MC
+Garrincha | 84 | PD
+Flávio Minuano | 82 | CA
+José Maria Rodrigues Alves | 86 | LD | Lateral campeão mundial em 1970 e símbolo de raça no clube.
+Wladimir Rodrigues dos Santos | 85 | LE | Recordista de jogos pelo Corinthians.
+João Roberto Basílio | 83 | MC,SA | Autor do gol do título paulista de 1977, que encerrou o jejum de 23 anos.
+Vanderlei Eustáquio de Oliveira | 84 | CA,SA
+Vaguinho (futebolista) | 81 | PD
+João Justino Amaral dos Santos | 84 | ZAG
+Biro-Biro | 84 | VOL,MC | Volante incansável, ídolo da Fiel.
+# 1980s
+Sócrates (futebolista) | 95 1970s=91 | MEI,MC | O Doutor: craque, artilheiro e líder da Democracia Corinthiana.
+Walter Casagrande | 87 1990s=80 | CA | Centroavante da Democracia Corinthiana, bicampeão paulista em 1982–83.
+Zenon (futebolista) | 85 | MEI,MC
+Dunga | 84 | VOL
+Carlos Roberto Gallo | 85 | GOL
+Wilson Mano | 79 | VOL,MC
+Marcelo Djian | 80 | ZAG
+Ronaldo Giovanelli | 84 1980s=80 | GOL | Goleiro de 1988 a 1998, campeão brasileiro de 1990.
+Neto (futebolista) | 88 1980s=84 | MEI | Camisa 10 do primeiro título brasileiro, em 1990. | Neto
+# 1990s
+Viola (futebolista) | 85 1980s=78 | CA
+Marcelinho Carioca | 89 2000s=86 | MEI,PD | O "Pé de Anjo", um dos maiores ídolos da história do clube.
+Freddy Rincón | 87 | VOL,MC | Capitão no Mundial de Clubes de 2000.
+Vampeta | 86 2000s=83 | VOL,MC
+Edílson Capetinha | 87 | SA,CA
+Ricardinho (futebolista, 1976) | 87 | MEI,MC
+Carlos Gamarra | 87 | ZAG
+Sylvio Mendes Campos Júnior | 83 | LE
+Luizão (atacante) | 85 | CA
+Dida (futebolista) | 88 1990s=86 | GOL | Goleiro do Mundial de Clubes de 2000.
+Marcelinho Paulista | 79 | VOL,MC
+# 2000s
+Carlos Tévez | 90 | SA,CA | Craque argentino do título brasileiro de 2005.
+Javier Mascherano | 87 | VOL
+Nilmar | 83 | SA,CA
+Gilberto Ribeiro Gonçalves | 82 | PE,SA
+Kléber de Carvalho Correia | 81 | LE
+Ronaldo Nazário | 88 2010s=85 | CA | O Fenômeno, campeão paulista e da Copa do Brasil em 2009.
+Elias Mendes Trindade | 85 2000s=83 | VOL,MC
+André Santos | 81 | LE
+Anderson Sebastião Cardoso | 82 | ZAG
+Felipe (goleiro) | 80 | GOL
+Jorge Henrique | 80 | PD,MEI
+Dentinho | 79 | SA,PE
+Alessandro Mori Nunes | 81 | LD
+Cristian Baroni | 80 | VOL,MC
+# 2010s
+Cássio Ramos | 88 2020s=85 | GOL | Herói da Libertadores e do Mundial de 2012, recordista de jogos entre os goleiros do clube.
+Ralf (futebolista) | 83 | VOL
+José Paulo Bezerra Maciel Junior | 87 2020s=79 | VOL,MC | Motor do meio-campo campeão da Libertadores e do Mundial de 2012.
+Danilo Gabriel de Andrade | 84 | MEI,MC | Autor de gols decisivos na campanha da Libertadores de 2012.
+Emerson Sheik | 84 | SA,PE | Autor dos dois gols da final da Libertadores de 2012.
+Paolo Guerrero | 86 | CA | Autor do gol do título mundial de 2012.
+Liedson | 82 | CA
+Fábio Santos (lateral) | 83 2020s=80 | LE
+Leandro Castán | 82 | ZAG
+Paulo André | 81 | ZAG
+Renato Augusto | 86 2020s=83 | MC,MEI | Cérebro do título brasileiro de 2015.
+Jadson | 85 | MEI,PD | Melhor jogador do Brasileirão de 2015.
+Gil (futebolista) | 85 2020s=81 | ZAG
+Fagner (futebolista) | 84 2020s=81 | LD
+Vágner Love | 82 | CA
+Malcom Filipe Silva de Oliveira | 82 | PE,PD
+Fabián Balbuena | 84 2020s=79 | ZAG
+Rodrigo Eduardo Costa Marinho | 82 | MEI,MC
+Ángel Romero (futebolista) | 80 2020s=77 | PD,PE,CA
+Guilherme Arana | 80 | LE
+Jô (futebolista) | 86 2000s=78 | CA | Artilheiro e craque do Brasileirão de 2017.
+# 2020s
+Willian Borges da Silva | 82 | PD,PE
+Róger Guedes | 82 | CA,PE
+Yuri Alberto | 81 | CA
+Memphis Depay | 86 | SA,CA
+Rodrigo Garro | 84 | MEI
+Hugo Souza | 81 | GOL
+Félix Torres | 80 | ZAG
+José Andrés Martínez | 79 | VOL
+André Ramalho | 79 | ZAG
+Matheus Bidu | 77 | LE
+Giuliano | 79 | MEI,MC
