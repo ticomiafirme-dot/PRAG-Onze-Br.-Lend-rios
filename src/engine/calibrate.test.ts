@@ -11,7 +11,7 @@ function goodDraft(clubId: string, seed: number, quality: 'top' | 'mid') {
   let st = createDraft(db, { mode: 'classico', clubId, decade: null, formationId: '4-3-3', seed, rerolls: 5 });
   while (!isDraftComplete(st)) {
     let best: { key: string; slot: string; ovr: number } | null = null;
-    for (const s of slotsWithOffers(st)) for (const k of st.draw!.offers[s.id]) {
+    for (const s of slotsWithOffers(st)) for (const k of st.draw!.offers[s.pos]!) {
       const c = db.card(k);
       if (checkPick(db, st, k, s.id).ok && (!best || c.overall > best.ovr)) best = { key: k, slot: s.id, ovr: c.overall };
     }

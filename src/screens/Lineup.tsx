@@ -67,7 +67,7 @@ function LineupInner() {
     const a = lineup[source];
     const b = lineup[slotId];
     if (ok) showToast(`${a.player.name} e ${b.player.name} trocaram de posição.`);
-    else showToast('Troca inválida: cada jogador só atua nas suas posições.');
+    else showToast('Troca inválida: cada jogador só atua na sua categoria (GOL, DEF, MEI ou ATA).');
     setSource(null);
   };
 
@@ -81,7 +81,7 @@ function LineupInner() {
         <div>
           <div className="eyebrow">Passo 4 · {formation.name}</div>
           <h1>Escalação</h1>
-          <p className="muted">Toque em dois jogadores para trocá-los de posição (se ambos atuarem na posição do outro).</p>
+          <p className="muted">Toque em dois jogadores para trocá-los de vaga. Jogadores da mesma categoria podem trocar livremente.</p>
         </div>
         <button
           className="btn btn-gold btn-lg"

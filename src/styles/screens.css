@@ -1671,3 +1671,10 @@
   font: 14px/1.5 var(--font-body);
   resize: vertical;
 }
+
+.formation-counts .chip {
+  padding: 2px 8px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  gap: 4px;
+}

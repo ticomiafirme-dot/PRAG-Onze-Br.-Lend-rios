@@ -9,8 +9,8 @@ Inspirado nas mecânicas de draft por sorteio do Perfect Season FC, com identida
 1. **Escolha o clube** — 20 clubes do Brasileirão (+ 4 convidados dos estaduais de PE e GO).
 2. **Escolha a década** — "Todas as décadas" (modo Clássico, com sorteio) ou uma era específica (Era Única).
 3. **Escolha a formação** — 4-3-3, 4-4-2, 4-2-3-1, 3-5-2, 4-1-4-1 ou 3-4-3 — e o nível dos rivais.
-4. **Draft** — a cada rodada uma década é sorteada; escolha um jogador dela para uma posição livre. 11 rodadas, **5 novos sorteios**. Sem repetir jogador e sempre na posição em que ele jogou de verdade.
-5. **Escalação e química** — ligações entre vizinhos por clube, década e nacionalidade. Troque jogadores de posição quando ambos puderem.
+4. **Draft** — a cada rodada uma década é sorteada; escolha um jogador dela para uma vaga livre. 11 rodadas, **5 novos sorteios**. Sem repetir jogador e sempre na categoria em que ele jogou de verdade.
+5. **Escalação e química** — ligações entre vizinhos por clube, década e nacionalidade. Jogadores da mesma categoria trocam de vaga livremente.
 6. **Capitão** — +3 de overall, faixa de capitão e química em dobro.
 7. **Pré-temporada** — força por setor, química e os 19 rivais (cada um escalado com lendas da própria história).
 8. **Brasileirão** — 38 rodadas em turno e returno. Assista às partidas em 1x/2x/4x ou pule para o resultado.
@@ -21,13 +21,24 @@ Inspirado nas mecânicas de draft por sorteio do Perfect Season FC, com identida
 | Modo | Como funciona |
 | --- | --- |
 | Clássico | Você escolhe o clube; as décadas são sorteadas a cada rodada |
-| Era Única | Clube e década fixos; três jogadores sorteados por posição a cada rodada |
+| Era Única | Clube e década fixos; três jogadores sorteados por categoria a cada rodada |
 | Mistura Brasileira | Clube e década sorteados a cada rodada |
 | Desafio Diário | Mesmo clube, década, formação e sorteios para todos; uma tentativa por dia (fuso de Brasília) |
 | Desafio Semanal | Um clube por semana, nível Difícil, sorteios iguais para todos |
 | Tríplice Coroa | Estadual + Copa do Brasil (mata-mata com pênaltis) + Brasileirão na mesma temporada |
 
 O progresso é salvo automaticamente no navegador (localStorage), e o ranking das campanhas fica salvo no dispositivo.
+
+### Posições: 4 categorias
+
+| Categoria | Inclui |
+| --- | --- |
+| **GOL** — Goleiros | goleiros |
+| **DEF** — Defensores | zagueiros e laterais |
+| **MEI** — Meio-campistas | volantes, meias centrais, meias ofensivos |
+| **ATA** — Atacantes | centroavantes, pontas e segundos atacantes |
+
+Qualquer jogador de uma categoria ocupa qualquer vaga dela. Um jogador pertence às categorias da sua função principal e das secundárias registradas (ex.: lateral que também atuou no meio é DEF e MEI). Distribuição por formação: 4-3-3 (1/4/3/3), 4-4-2 (1/4/4/2), 4-2-3-1 (1/4/4/2), 3-5-2 (1/3/5/2), 4-1-4-1 (1/4/5/1) e 3-4-3 (1/3/4/3).
 
 ## Rodando
 
@@ -70,9 +81,9 @@ src/
   data/        tipos, clubes, formações e base de jogadores (JSON por clube)
   engine/      lógica pura e testável
     rng.ts         gerador com semente (crypto para sorteios reais; data para desafios)
-    database.ts    índices por clube/década/posição
+    database.ts    índices por clube/década e categorias de cada jogador
     draft.ts       sorteios, ofertas, novos sorteios e validação (inclui viabilidade das posições restantes)
-    matching.ts    emparelhamento posições × jogadores (Kuhn e algoritmo húngaro)
+    matching.ts    emparelhamento vagas × jogadores por categoria (Kuhn e algoritmo húngaro)
     chemistry.ts   ligações, química individual/do time e capitão
     team.ts        força por setor, times da IA e dificuldade
     match.ts       simulação minuto a minuto com eventos, estatísticas e notas

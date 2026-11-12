@@ -25,13 +25,20 @@ export function HowTo() {
           <h2>2. O draft</h2>
           <ul>
             <li>A cada rodada o jogo sorteia uma década (no modo Mistura, um clube e uma década).</li>
-            <li>As posições do campo com jogadores daquela década brilham em dourado. Toque em uma delas para ver as opções.</li>
-            <li>Escolha um jogador para preencher a posição. São 11 rodadas até completar o time titular.</li>
+            <li>
+              As posições são divididas em quatro categorias: <strong>Goleiros (GOL)</strong>, <strong>Defensores (DEF)</strong>,{' '}
+              <strong>Meio-campistas (MEI)</strong> e <strong>Atacantes (ATA)</strong>.
+            </li>
+            <li>As vagas do campo cuja categoria tem jogadores daquela década brilham em dourado. Escolha a categoria (ou toque na vaga) para ver as opções.</li>
+            <li>Escolha um jogador para preencher a vaga. São 11 rodadas até completar o time titular.</li>
             <li>
               Você tem <strong>5 novos sorteios</strong> por draft. Eles não voltam.
             </li>
-            <li>Um jogador nunca aparece duas vezes no seu time e só atua nas posições em que jogou de verdade.</li>
-            <li>Na Era Única, a década é fixa e o sorteio define quais três jogadores aparecem para cada posição.</li>
+            <li>
+              Um jogador nunca aparece duas vezes no seu time e só atua na categoria em que jogou de verdade. Dentro da categoria, ocupa qualquer vaga:
+              um defensor pode ser zagueiro ou lateral; um meio-campista, volante ou meia; um atacante, ponta ou centroavante.
+            </li>
+            <li>Na Era Única, a década é fixa e o sorteio define quais três jogadores aparecem para cada categoria.</li>
           </ul>
         </section>
         <section className="panel">

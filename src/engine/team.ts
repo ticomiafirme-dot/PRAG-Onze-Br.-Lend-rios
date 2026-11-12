@@ -1,7 +1,7 @@
 // Montagem das fichas de time (usuário e IA) e cálculo das forças por setor.
 
-import type { Card, Decade, Position } from '../data/types';
-import { POSITION_LINE, decadeLabel } from '../data/types';
+import type { Card, Decade, Position, Role } from '../data/types';
+import { decadeLabel, toPosition } from '../data/types';
 import { FORMATIONS, getFormation, type FormationId } from '../data/formations';
 import type { Database } from './database';
 import { CAPTAIN_BONUS, computeChemistry } from './chemistry';
@@ -10,7 +10,10 @@ import type { Rng } from './rng';
 
 export interface TeamPlayer {
   slotId: string;
+  /** Categoria da vaga ocupada (GOL, DEF, MEI, ATA). */
   pos: Position;
+  /** Função histórica do atleta; só dá nuances à simulação, não restringe nada. */
+  role?: Role;
   cardKey: string;
   personId: string;
   name: string;
@@ -57,25 +60,13 @@ export const DIFFICULTIES: { id: Difficulty; name: string; description: string }
   { id: 'lendario', name: 'Lendário', description: 'Rivais entram com a seleção de todos os tempos do clube. Só para os fortes.' },
 ];
 
-const NUMBER_PREFS: Record<Position, number[]> = {
-  GOL: [1, 12],
-  LD: [2, 13],
-  ZAG: [3, 4, 14, 15],
-  LE: [6, 16],
-  VOL: [5, 15, 17],
-  MC: [8, 18, 16],
-  MEI: [10, 20, 7, 11],
-  PD: [7, 17, 19],
-  PE: [11, 17, 19],
-  SA: [11, 7, 19, 21],
-  CA: [9, 19, 21],
-};
-
-export function assignNumbers(slots: { id: string; pos: Position }[]): Record<string, number> {
+/** Números de camisa: o sugerido pela vaga; se repetido, o próximo livre. */
+export function assignNumbers(slots: { id: string; num?: number }[]): Record<string, number> {
   const used = new Set<number>();
   const out: Record<string, number> = {};
   for (const s of slots) {
-    const n = NUMBER_PREFS[s.pos].find((x) => !used.has(x)) ?? [...Array(30).keys()].map((i) => i + 1).find((x) => !used.has(x))!;
+    let n = s.num && !used.has(s.num) ? s.num : 0;
+    if (!n) n = [...Array(40).keys()].map((i) => i + 1).find((x) => !used.has(x))!;
     used.add(n);
     out[s.id] = n;
   }
@@ -88,14 +79,15 @@ const round1 = (x: number) => Math.round(x * 10) / 10;
 /** Forças por setor a partir dos overalls efetivos, formação e química. */
 export function computeRatings(players: TeamPlayer[], formationId: FormationId, chem: number): TeamRatings {
   const style = getFormation(formationId).style;
-  const byLine = (line: string) => players.filter((p) => POSITION_LINE[p.pos] === line).map((p) => p.eff);
-  const byPos = (...ps: Position[]) => players.filter((p) => ps.includes(p.pos)).map((p) => p.eff);
+  const byLine = (line: Position) => players.filter((p) => toPosition(p.pos) === line).map((p) => p.eff);
+  // nuance: no meio-campo, volantes reforçam a defesa e meias reforçam o ataque
+  const midByRole = (...roles: Role[]) => players.filter((p) => toPosition(p.pos) === 'MEI' && p.role && roles.includes(p.role)).map((p) => p.eff);
   const gk = avg(byLine('GOL'));
   const def = avg(byLine('DEF'));
   const mid = avg(byLine('MEI'));
   const att = avg(byLine('ATA'));
-  const vol = byPos('VOL').length ? avg(byPos('VOL')) : mid;
-  const mei = byPos('MEI').length ? avg(byPos('MEI')) : mid;
+  const vol = midByRole('VOL').length ? avg(midByRole('VOL')) : mid;
+  const mei = midByRole('MEI').length ? avg(midByRole('MEI')) : mid;
   // Química: entrosamento coletivo de −2,5 a +2,5 pontos
   const cohesion = (chem - 50) / 20;
   return {
@@ -136,6 +128,7 @@ export function buildSheet(
       return {
         slotId: s.id,
         pos: s.pos,
+        role: c.player.position,
         cardKey: c.key,
         personId: c.id,
         name: c.player.name,

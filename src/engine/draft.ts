@@ -1,7 +1,10 @@
 // Motor do draft: sorteio de décadas (e clubes, no modo Mistura), oferta de
-// jogadores por posição, novos sorteios limitados e validação das escolhas.
+// jogadores por categoria (GOL, DEF, MEI, ATA), novos sorteios limitados e
+// validação das escolhas. Qualquer jogador de uma categoria pode ocupar
+// qualquer vaga livre dessa categoria.
 
-import type { Card, Decade } from '../data/types';
+import type { Card, Decade, Position } from '../data/types';
+import { POSITIONS } from '../data/types';
 import { getFormation, type FormationId, type Slot } from '../data/formations';
 import { canPlay, type Database } from './database';
 import { canFillAll } from './matching';
@@ -10,7 +13,7 @@ import { Rng, type RngState } from './rng';
 export type GameMode = 'classico' | 'era' | 'mistura' | 'diario' | 'semanal' | 'triplice';
 
 export const DEFAULT_REROLLS = 5;
-/** Quantos jogadores são oferecidos por posição quando a década é fixa. */
+/** Quantos jogadores são oferecidos por categoria quando a década é fixa. */
 export const ERA_OFFER_SIZE = 3;
 
 export interface DraftConfig {
@@ -28,8 +31,8 @@ export interface DraftDraw {
   round: number;
   clubId: string;
   decade: Decade;
-  /** slotId -> chaves das cartas oferecidas para aquela posição. */
-  offers: Record<string, string[]>;
+  /** categoria -> chaves das cartas oferecidas para as vagas livres dela. */
+  offers: Partial<Record<Position, string[]>>;
   /** true se veio de um novo sorteio pedido pelo jogador. */
   fromReroll: boolean;
 }
@@ -83,10 +86,21 @@ export function isDraftComplete(state: DraftState): boolean {
   return openSlots(state).length === 0;
 }
 
-/** Cartas da (clube, década) que servem para a posição e ainda não foram usadas. */
-export function eligibleFor(db: Database, state: DraftState, clubId: string, decade: Decade, slot: Slot, used?: Set<string>): Card[] {
+/** Categorias com vagas livres, na ordem GOL → DEF → MEI → ATA. */
+export function openPositions(state: DraftState): Position[] {
+  const open = new Set(openSlots(state).map((s) => s.pos));
+  return POSITIONS.filter((p) => open.has(p));
+}
+
+/** Primeira vaga livre de uma categoria (na ordem da formação). */
+export function firstOpenSlot(state: DraftState, pos: Position): Slot | null {
+  return openSlots(state).find((s) => s.pos === pos) ?? null;
+}
+
+/** Cartas da (clube, década) que servem para a categoria e ainda não foram usadas. */
+export function eligibleFor(db: Database, state: DraftState, clubId: string, decade: Decade, pos: Position, used?: Set<string>): Card[] {
   const taken = used ?? pickedPersons(db, state);
-  return db.cards(clubId, decade).filter((c) => !taken.has(c.id) && canPlay(c, slot.pos));
+  return db.cards(clubId, decade).filter((c) => !taken.has(c.id) && canPlay(c, pos));
 }
 
 /** Universo de cartas possível para as próximas rodadas (para checar viabilidade). */
@@ -110,7 +124,7 @@ interface Candidate {
 
 function candidatePairs(db: Database, state: DraftState): Candidate[] {
   const { config } = state;
-  const open = openSlots(state);
+  const open = openPositions(state);
   const taken = pickedPersons(db, state);
   const pairs: Candidate[] =
     config.mode === 'mistura'
@@ -118,7 +132,56 @@ function candidatePairs(db: Database, state: DraftState): Candidate[] {
       : config.decade
         ? [{ clubId: config.clubId!, decade: config.decade }]
         : db.decadesOf(config.clubId!).map((d) => ({ clubId: config.clubId!, decade: d }));
-  return pairs.filter((p) => open.some((s) => eligibleFor(db, state, p.clubId, p.decade, s, taken).length > 0));
+  return pairs.filter((p) => open.some((pos) => eligibleFor(db, state, p.clubId, p.decade, pos, taken).length > 0));
+}
+
+/**
+ * Ofertas de um (clube, década) para cada categoria com vaga livre: jogadores
+ * inéditos da categoria cuja escolha ainda permite completar as demais vagas.
+ */
+function buildOffers(db: Database, state: DraftState, cand: Candidate, rng: Rng): Partial<Record<Position, string[]>> {
+  const open = openSlots(state);
+  const taken = pickedPersons(db, state);
+  const universe = remainingUniverse(db, state, taken);
+  // a escolha ocupa uma vaga da categoria; as demais vagas ainda precisam ter opções
+  const feasible = (card: Card, pos: Position): boolean => {
+    const slot = open.find((s) => s.pos === pos)!;
+    const rest = open.filter((s) => s.id !== slot.id);
+    if (rest.length === 0) return true;
+    return canFillAll(
+      rest,
+      universe.filter((c) => c.id !== card.id),
+    );
+  };
+  const offers: Partial<Record<Position, string[]>> = {};
+  for (const pos of openPositions(state)) {
+    let cards = eligibleFor(db, state, cand.clubId, cand.decade, pos, taken).filter((c) => feasible(c, pos));
+    if (state.config.decade) {
+      // Década fixa: a aleatoriedade está em QUAIS jogadores aparecem.
+      cards = rng.shuffle(cards).slice(0, ERA_OFFER_SIZE).sort((a, b) => b.overall - a.overall);
+    }
+    if (cards.length) offers[pos] = cards.map((c) => c.key);
+  }
+  return offers;
+}
+
+/** As vagas livres ainda podem ser preenchidas com o que resta da base? */
+export function isDraftViable(db: Database, state: DraftState): boolean {
+  const open = openSlots(state);
+  return open.length === 0 || canFillAll(open, remainingUniverse(db, state, pickedPersons(db, state)));
+}
+
+/**
+ * Recalcula as ofertas do sorteio atual mantendo clube e década (usado ao
+ * carregar progresso salvo por versões anteriores). Sem ofertas, sorteia de novo.
+ */
+export function refreshDraw(db: Database, state: DraftState): DraftState {
+  if (isDraftComplete(state)) return { ...state, draw: null };
+  if (!state.draw) return drawRound(db, state, false);
+  const rng = new Rng(state.rng);
+  const offers = buildOffers(db, state, { clubId: state.draw.clubId, decade: state.draw.decade }, rng);
+  if (Object.keys(offers).length === 0) return drawRound(db, { ...state, draw: null }, false);
+  return { ...state, rng: rng.state(), draw: { ...state.draw, round: Object.keys(state.picks).length + 1, offers } };
 }
 
 /** Sorteia a próxima rodada (ou refaz o sorteio, se `reroll`). */
@@ -137,19 +200,8 @@ export function drawRound(db: Database, state: DraftState, reroll: boolean): Dra
     const others = pairs.filter((p) => !(p.clubId === state.draw!.clubId && p.decade === state.draw!.decade));
     if (others.length > 0) pairs = others;
   }
-  const taken = pickedPersons(db, state);
-  const universe = remainingUniverse(db, state, taken);
-  const feasible = (card: Card, slot: Slot): boolean => {
-    const rest = open.filter((s) => s.id !== slot.id);
-    if (rest.length === 0) return true;
-    return canFillAll(
-      rest,
-      universe.filter((c) => c.id !== card.id),
-    );
-  };
-
   let chosen: Candidate | null = null;
-  let offers: Record<string, string[]> = {};
+  let offers: Partial<Record<Position, string[]>> = {};
   while (pairs.length > 0) {
     let cand: Candidate;
     if (config.mode === 'mistura') {
@@ -160,15 +212,7 @@ export function drawRound(db: Database, state: DraftState, reroll: boolean): Dra
     } else {
       cand = rng.pick(pairs);
     }
-    offers = {};
-    for (const slot of open) {
-      let cards = eligibleFor(db, state, cand.clubId, cand.decade, slot, taken).filter((c) => feasible(c, slot));
-      if (config.decade) {
-        // Década fixa: a aleatoriedade está em QUAIS jogadores aparecem.
-        cards = rng.shuffle(cards).slice(0, ERA_OFFER_SIZE).sort((a, b) => b.overall - a.overall);
-      }
-      if (cards.length) offers[slot.id] = cards.map((c) => c.key);
-    }
+    offers = buildOffers(db, state, cand, rng);
     if (Object.keys(offers).length > 0) {
       chosen = cand;
       break;
@@ -193,16 +237,16 @@ export function reroll(db: Database, state: DraftState): DraftState {
 
 export type PickCheck = { ok: true } | { ok: false; reason: string };
 
-/** Valida uma escolha: posição aberta, carta ofertada, pessoa inédita e viabilidade do restante. */
+/** Valida uma escolha: vaga livre, carta ofertada para a categoria, pessoa inédita e viabilidade do restante. */
 export function checkPick(db: Database, state: DraftState, cardKey: string, slotId: string): PickCheck {
   const draw = state.draw;
   if (!draw) return { ok: false, reason: 'Não há sorteio ativo.' };
   const slot = getFormation(state.config.formationId).slots.find((s) => s.id === slotId);
-  if (!slot) return { ok: false, reason: 'Posição inexistente.' };
-  if (state.picks[slotId]) return { ok: false, reason: 'Essa posição já está preenchida.' };
-  if (!draw.offers[slotId]?.includes(cardKey)) return { ok: false, reason: 'Jogador não disponível para essa posição neste sorteio.' };
+  if (!slot) return { ok: false, reason: 'Vaga inexistente.' };
+  if (state.picks[slotId]) return { ok: false, reason: 'Essa vaga já está preenchida.' };
+  if (!draw.offers[slot.pos]?.includes(cardKey)) return { ok: false, reason: 'Jogador não disponível para essa categoria neste sorteio.' };
   const card = db.card(cardKey);
-  if (!canPlay(card, slot.pos)) return { ok: false, reason: `${card.player.name} não atua como ${slot.pos}.` };
+  if (!canPlay(card, slot.pos)) return { ok: false, reason: `${card.player.name} não é da categoria ${slot.pos}.` };
   const taken = pickedPersons(db, state);
   if (taken.has(card.id)) return { ok: false, reason: `${card.player.name} já está no seu time.` };
   // Viabilidade: as posições restantes ainda podem ser preenchidas?
@@ -231,13 +275,19 @@ export function pick(db: Database, state: DraftState, cardKey: string, slotId: s
   return drawRound(db, next, false);
 }
 
-/** Slots abertos que têm oferta no sorteio atual, na ordem da formação (goleiro → ataque). */
-export function slotsWithOffers(state: DraftState): Slot[] {
+/** Categorias com vagas livres e ofertas no sorteio atual (GOL → DEF → MEI → ATA). */
+export function positionsWithOffers(state: DraftState): Position[] {
   if (!state.draw) return [];
-  return openSlots(state).filter((s) => (state.draw!.offers[s.id]?.length ?? 0) > 0);
+  return openPositions(state).filter((p) => (state.draw!.offers[p]?.length ?? 0) > 0);
 }
 
-/** Formações viáveis para uma década fixa (todas as posições preenchíveis). */
+/** Vagas livres cuja categoria tem oferta no sorteio atual. */
+export function slotsWithOffers(state: DraftState): Slot[] {
+  const pos = new Set(positionsWithOffers(state));
+  return openSlots(state).filter((s) => pos.has(s.pos));
+}
+
+/** Formações viáveis para uma década fixa (todas as vagas preenchíveis). */
 export function feasibleFormationsForDecade(db: Database, clubId: string, decade: Decade, formations: FormationId[]): FormationId[] {
   const cards = db.cards(clubId, decade);
   return formations.filter((f) => canFillAll(getFormation(f).slots, cards));

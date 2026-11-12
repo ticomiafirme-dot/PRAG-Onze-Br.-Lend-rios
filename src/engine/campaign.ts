@@ -5,7 +5,7 @@ import type { Club } from '../data/types';
 import type { Database } from './database';
 import type { GameMode } from './draft';
 import { Rng, subSeed } from './rng';
-import { simulateMatch, type MatchResult } from './match';
+import { countsCleanSheet, simulateMatch, type MatchResult } from './match';
 import { compactResult, computeStandings, roundRobin, type Fixture, type PlayedMatch, type Standing } from './league';
 import { COPA_STAGES, advanceStage, aggregate, createKnockout, simulateShootout, type CupState, type ShootoutKick, type Tie } from './cup';
 import { buildAiTeam, type Difficulty, type TeamSheet } from './team';
@@ -436,7 +436,7 @@ export function userPlayerStats(c: Campaign, comp?: CompId): PlayerSeasonStats[]
       s.red += line.red;
       s.saves += line.saves;
       s.ratingSum += line.rating;
-      if (conceded === 0 && ['GOL', 'ZAG', 'LD', 'LE'].includes(line.pos)) s.cleanSheets++;
+      if (conceded === 0 && countsCleanSheet(line.pos)) s.cleanSheets++;
       if (um.result.mvp?.side === side && um.result.mvp.personId === line.personId) s.mvps++;
     }
   }

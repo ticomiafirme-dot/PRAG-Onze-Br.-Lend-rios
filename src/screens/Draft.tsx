@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CLUB_BY_ID, CLUBS } from '../data/clubs';
 import { db } from '../data/db';
-import { decadeLabel, POSITION_NAMES, type Card } from '../data/types';
+import { decadeLabel, POSITION_NAMES, POSITION_PLURAL, type Card, type Position } from '../data/types';
 import { getFormation, type Slot } from '../data/formations';
-import { isDraftComplete, openSlots, slotsWithOffers } from '../engine/draft';
+import { firstOpenSlot, isDraftComplete, openSlots, positionsWithOffers } from '../engine/draft';
 import { computeChemistry } from '../engine/chemistry';
 import { navigate } from '../router';
 import { lineupOf, MODE_INFO, useGame } from '../state/store';
@@ -28,13 +28,15 @@ function DraftInner() {
   const draft = run.draft!;
   const formation = getFormation(draft.config.formationId);
   const [toast, showToast] = useToast();
+  // categoria escolhida nas abas e, opcionalmente, a vaga tocada no campo
+  const [activePos, setActivePos] = useState<Position | null>(null);
   const [activeSlot, setActiveSlot] = useState<string | null>(null);
   const [lastPicked, setLastPicked] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(true);
 
   const draw = draft.draw;
   const drawKey = `${draft.history.length}-${draft.rerollsLeft}`;
-  const offerSlots = slotsWithOffers(draft);
+  const offerPositions = positionsWithOffers(draft);
   const complete = isDraftComplete(draft);
 
   // animação de sorteio a cada nova rodada / novo sorteio
@@ -43,12 +45,6 @@ function DraftInner() {
     const t = setTimeout(() => setSpinning(false), 1100);
     return () => clearTimeout(t);
   }, [drawKey]);
-
-  // posição ativa: a primeira (do goleiro ao ataque) com opções
-  useEffect(() => {
-    if (!draw) return;
-    if (!activeSlot || !draw.offers[activeSlot]) setActiveSlot(offerSlots[0]?.id ?? null);
-  }, [drawKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (complete) {
@@ -61,17 +57,21 @@ function DraftInner() {
   const chem = useMemo(() => computeChemistry(db, draft.config.formationId, lineup, null), [draft.picks]); // eslint-disable-line react-hooks/exhaustive-deps
   const avg = Object.values(lineup).length ? Math.round(Object.values(lineup).reduce((a, c) => a + c.overall, 0) / Object.values(lineup).length) : 0;
 
-  // posição ativa efetiva (síncrona): a escolhida, se tiver opções; senão a primeira com opções
-  const effectiveSlot = activeSlot && draw?.offers[activeSlot] ? activeSlot : (offerSlots[0]?.id ?? null);
-  const active = formation.slots.find((s) => s.id === effectiveSlot) ?? null;
-  const offers: Card[] = active && draw ? (draw.offers[active.id] ?? []).map((k) => db.card(k)) : [];
+  // categoria efetiva (síncrona): a escolhida, se tiver opções; senão a primeira com opções (GOL → ATA)
+  const activeCat: Position | null = activePos && offerPositions.includes(activePos) ? activePos : (offerPositions[0] ?? null);
+  // vaga de destino: a tocada no campo (se livre e da categoria); senão a primeira livre da categoria
+  const tapped = formation.slots.find((s) => s.id === activeSlot && s.pos === activeCat && !draft.picks[s.id]);
+  const target: Slot | null = tapped ?? (activeCat ? firstOpenSlot(draft, activeCat) : null);
+  const openInCat = activeCat ? openSlots(draft).filter((s) => s.pos === activeCat).length : 0;
+  const offers: Card[] = activeCat && draw ? (draw.offers[activeCat] ?? []).map((k) => db.card(k)) : [];
 
   const doPick = (card: Card) => {
-    if (!active) return;
+    if (!target) return;
     try {
-      pickCard(card.key, active.id);
-      setLastPicked(active.id);
-      showToast(`${card.player.name} escalado como ${POSITION_NAMES[active.pos].toLowerCase()}!`);
+      pickCard(card.key, target.id);
+      setLastPicked(target.id);
+      showToast(`${card.player.name} escalado como ${POSITION_NAMES[target.pos].toLowerCase()}!`);
+      setActivePos(null);
       setActiveSlot(null);
       // no celular, volta para o painel do sorteio
       if (window.innerWidth < 900) {
@@ -133,11 +133,15 @@ function DraftInner() {
                   </div>
                 );
               }
-              const has = !!draw?.offers[s.id];
+              const has = offerPositions.includes(s.pos);
               return (
                 <button
-                  className={`slot-empty ${has ? 'has-offer' : ''} ${effectiveSlot === s.id ? 'is-active' : ''}`}
-                  onClick={() => has && setActiveSlot(s.id)}
+                  className={`slot-empty ${has ? 'has-offer' : ''} ${target?.id === s.id ? 'is-active' : ''}`}
+                  onClick={() => {
+                    if (!has) return;
+                    setActivePos(s.pos);
+                    setActiveSlot(s.id);
+                  }}
                   disabled={!has}
                   aria-label={`${POSITION_NAMES[s.pos]}${has ? ' — com opções nesta década' : ''}`}
                 >
@@ -180,7 +184,8 @@ function DraftInner() {
                         {club.name} · {decadeLabel(draw.decade)}
                       </strong>
                       <div className="dim">
-                        {offerSlots.length} posição(ões) com opções · {Object.values(draw.offers).reduce((a, o) => a + o.length, 0)} jogadores elegíveis
+                        {offerPositions.length} {offerPositions.length === 1 ? 'categoria' : 'categorias'} com opções ·{' '}
+                        {offerPositions.reduce((a, p) => a + (draw.offers[p]?.length ?? 0), 0)} jogadores elegíveis
                       </div>
                     </div>
                   </div>
@@ -194,16 +199,31 @@ function DraftInner() {
                 <div className="row wrap" style={{ justifyContent: 'space-between', gap: 8 }}>
                   <div>
                     <div className="eyebrow" style={{ margin: 0 }}>
-                      Posição disponível
+                      Categoria disponível
                     </div>
-                    <h2 style={{ fontSize: 26 }}>{active ? `${POSITION_NAMES[active.pos]} (${active.pos})` : '—'}</h2>
+                    <h2 style={{ fontSize: 26 }}>{activeCat ? `${POSITION_PLURAL[activeCat]} (${activeCat})` : '—'}</h2>
+                    {activeCat && (
+                      <div className="dim" style={{ fontSize: 13 }}>
+                        {openInCat} {openInCat === 1 ? 'vaga livre' : 'vagas livres'} · o escolhido entra na vaga destacada no campo
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="tabs" style={{ margin: '8px 0 12px' }} role="tablist" aria-label="Posições com opções">
-                  {offerSlots.map((s) => (
-                    <button key={s.id} role="tab" className="tab" aria-selected={effectiveSlot === s.id} onClick={() => setActiveSlot(s.id)}>
-                      {s.pos}
-                      <span className="dim"> {draw!.offers[s.id].length}</span>
+                <div className="tabs" style={{ margin: '8px 0 12px' }} role="tablist" aria-label="Categorias com opções">
+                  {offerPositions.map((p) => (
+                    <button
+                      key={p}
+                      role="tab"
+                      className="tab"
+                      aria-selected={activeCat === p}
+                      title={POSITION_PLURAL[p]}
+                      onClick={() => {
+                        setActivePos(p);
+                        setActiveSlot(null);
+                      }}
+                    >
+                      {p}
+                      <span className="dim"> {draw!.offers[p]!.length}</span>
                     </button>
                   ))}
                 </div>
@@ -212,14 +232,15 @@ function DraftInner() {
                 ) : offers.length ? (
                   <div className="offers">
                     {offers.map((c, i) => (
-                      <PlayerCard key={c.key} card={c} pos={active!.pos} onClick={() => doPick(c)} delay={i * 70} showClub={run.mode === 'mistura'} />
+                      <PlayerCard key={c.key} card={c} pos={activeCat!} onClick={() => doPick(c)} delay={i * 70} showClub={run.mode === 'mistura'} />
                     ))}
                   </div>
                 ) : (
-                  <div className="empty">Nenhum jogador desta década para as posições livres. Use um novo sorteio.</div>
+                  <div className="empty">Nenhum jogador desta década para as categorias livres. Use um novo sorteio.</div>
                 )}
                 <p className="dim" style={{ fontSize: 13, marginTop: 10 }}>
-                  Toque em uma posição dourada no campo para ver outras opções desta década. {openSlots(draft).length} posições livres.
+                  Qualquer jogador da categoria pode ocupar qualquer vaga dela. Toque em uma vaga dourada no campo para escolher onde ele entra.{' '}
+                  {openSlots(draft).length} vagas livres.
                 </p>
               </div>
             </>

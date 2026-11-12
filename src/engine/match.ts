@@ -5,7 +5,8 @@
 // explodir na trave. Há faltas, cartões, pênaltis, escanteios e impedimentos.
 // Tudo é determinístico a partir da semente: a mesma partida pode ser reassistida.
 
-import type { Position } from '../data/types';
+import type { Position, Role } from '../data/types';
+import { ROLE_CATEGORY, toPosition } from '../data/types';
 import { Rng } from './rng';
 import type { TeamPlayer, TeamSheet } from './team';
 
@@ -113,10 +114,44 @@ export const TUNING = {
   redCardPenalty: 4,
 };
 
-const SCORER_W: Record<Position, number> = { GOL: 0, LD: 0.7, ZAG: 0.6, LE: 0.7, VOL: 0.8, MC: 1.4, MEI: 2.3, PD: 2.7, PE: 2.7, SA: 2.9, CA: 3.3 };
-const HEADER_W: Record<Position, number> = { GOL: 0, LD: 0.3, ZAG: 2.6, LE: 0.3, VOL: 0.8, MC: 0.6, MEI: 0.4, PD: 0.6, PE: 0.6, SA: 1.4, CA: 3.4 };
-const ASSIST_W: Record<Position, number> = { GOL: 0.05, LD: 1.5, ZAG: 0.4, LE: 1.5, VOL: 0.8, MC: 1.5, MEI: 3.2, PD: 2.6, PE: 2.6, SA: 2, CA: 1.4 };
-const FOUL_W: Record<Position, number> = { GOL: 0.1, LD: 1.2, ZAG: 1.6, LE: 1.2, VOL: 2, MC: 1.2, MEI: 0.8, PD: 0.7, PE: 0.7, SA: 0.6, CA: 0.8 };
+/**
+ * Pesos por função histórica do atleta (dão o "jeito" de cada um: centroavante
+ * cabeceia, meia dá passe...). A vaga só exige a categoria; quando a função do
+ * jogador é de outra categoria (ex.: lateral improvisado no meio), vale a média
+ * da categoria da vaga.
+ */
+interface Weights {
+  role: Record<Role, number>;
+  cat: Record<Position, number>;
+}
+
+function weights(role: Record<Role, number>): Weights {
+  const cat: Record<Position, number> = { GOL: 0, DEF: 0, MEI: 0, ATA: 0 };
+  const n: Record<Position, number> = { GOL: 0, DEF: 0, MEI: 0, ATA: 0 };
+  for (const [r, w] of Object.entries(role) as [Role, number][]) {
+    cat[ROLE_CATEGORY[r]] += w;
+    n[ROLE_CATEGORY[r]]++;
+  }
+  for (const c of Object.keys(cat) as Position[]) cat[c] = n[c] ? cat[c] / n[c] : 0;
+  return { role, cat };
+}
+
+const SCORER_W = weights({ GOL: 0, LD: 0.7, ZAG: 0.6, LE: 0.7, VOL: 0.8, MC: 1.4, MEI: 2.3, PD: 2.7, PE: 2.7, SA: 2.9, CA: 3.3 });
+const HEADER_W = weights({ GOL: 0, LD: 0.3, ZAG: 2.6, LE: 0.3, VOL: 0.8, MC: 0.6, MEI: 0.4, PD: 0.6, PE: 0.6, SA: 1.4, CA: 3.4 });
+const ASSIST_W = weights({ GOL: 0.05, LD: 1.5, ZAG: 0.4, LE: 1.5, VOL: 0.8, MC: 1.5, MEI: 3.2, PD: 2.6, PE: 2.6, SA: 2, CA: 1.4 });
+const FOUL_W = weights({ GOL: 0.1, LD: 1.2, ZAG: 1.6, LE: 1.2, VOL: 2, MC: 1.2, MEI: 0.8, PD: 0.7, PE: 0.7, SA: 0.6, CA: 0.8 });
+
+function weightOf(w: Weights, p: TeamPlayer): number {
+  const cat = toPosition(p.pos);
+  if (p.role && ROLE_CATEGORY[p.role] === cat) return w.role[p.role];
+  return w.cat[cat];
+}
+
+/** Defensores e goleiros somam "jogo sem sofrer gols". */
+export function countsCleanSheet(pos: string): boolean {
+  const c = toPosition(pos);
+  return c === 'GOL' || c === 'DEF';
+}
 
 const clamp = (x: number, a: number, b: number) => Math.max(a, Math.min(b, x));
 
@@ -182,13 +217,13 @@ export function simulateMatch(home: TeamSheet, away: TeamSheet, seed: number): M
     events.push({ ...e, t: t++, score: [score[0], score[1]] });
   };
 
-  const pickPlayer = (side: Side, w: Record<Position, number>, exclude?: string): TeamPlayer | undefined => {
-    const pool = active(side).filter((p) => p.personId !== exclude && w[p.pos] > 0);
+  const pickPlayer = (side: Side, w: Weights, exclude?: string): TeamPlayer | undefined => {
+    const pool = active(side).filter((p) => p.personId !== exclude && weightOf(w, p) > 0);
     if (!pool.length) return undefined;
-    return rng.weighted(pool, (p) => w[p.pos] * Math.pow(p.eff / 80, 2));
+    return rng.weighted(pool, (p) => weightOf(w, p) * Math.pow(p.eff / 80, 2));
   };
 
-  const gkOf = (side: Side) => active(side).find((p) => p.pos === 'GOL');
+  const gkOf = (side: Side) => active(side).find((p) => toPosition(p.pos) === 'GOL');
 
   const stoppage: [number, number] = [rng.int(1, 4), rng.int(2, 6)];
   const mins: { minute: number; extra?: number; half: 1 | 2 }[] = [];
@@ -272,7 +307,7 @@ export function simulateMatch(home: TeamSheet, away: TeamSheet, seed: number): M
     // pênalti
     if (rng.chance(TUNING.penaltyChance * Math.exp(edge / 25))) {
       // cobrador: entre os três melhores jogadores de linha (não sempre o mesmo)
-      const takers = [...active(side)].filter((p) => p.pos !== 'GOL').sort((a, b) => b.eff - a.eff).slice(0, 3);
+      const takers = [...active(side)].filter((p) => toPosition(p.pos) !== 'GOL').sort((a, b) => b.eff - a.eff).slice(0, 3);
       const taker = takers.length ? rng.pick(takers) : undefined;
       const gk = gkOf(opp);
       stats[side].shots++;
@@ -369,8 +404,8 @@ export function simulateMatch(home: TeamSheet, away: TeamSheet, seed: number): M
       const p = teams[side].players.find((x) => x.personId === line.personId)!;
       let r = 6 + (p.eff - 80) * 0.04;
       r += line.goals * 1.1 + line.assists * 0.6;
-      if (line.pos === 'GOL') r += line.saves * 0.25;
-      if (['GOL', 'ZAG', 'LD', 'LE'].includes(line.pos)) r += ga === 0 ? 0.6 : -0.25 * ga;
+      if (toPosition(line.pos) === 'GOL') r += line.saves * 0.25;
+      if (countsCleanSheet(line.pos)) r += ga === 0 ? 0.6 : -0.25 * ga;
       r += gf > ga ? 0.3 : gf < ga ? -0.3 : 0;
       r -= line.yellow * 0.3 + line.red * 1.5;
       r += rng.normal() * 0.25;

@@ -1,11 +1,18 @@
 import type { Position } from './types';
 
+/**
+ * Vaga na formação. `pos` é a categoria aceita (GOL, DEF, MEI ou ATA): qualquer
+ * jogador da categoria pode ocupar qualquer vaga dela. O `id` identifica a vaga
+ * no campo (lado/altura) e é usado pelas ligações de química; não restringe nada.
+ */
 export interface Slot {
   id: string;
   pos: Position;
   /** Coordenadas no campo em %: x da esquerda p/ direita, y do ataque (0) à defesa (100). */
   x: number;
   y: number;
+  /** Número da camisa sugerido para quem ocupar a vaga. */
+  num: number;
 }
 
 export interface Formation {
@@ -14,7 +21,7 @@ export interface Formation {
   tagline: string;
   description: string;
   slots: Slot[];
-  /** Ligações de química entre posições vizinhas. */
+  /** Ligações de química entre vagas vizinhas. */
   links: [string, string][];
   /** Modificadores táticos usados pelo motor de simulação. */
   style: { attack: number; midfield: number; defense: number };
@@ -22,19 +29,21 @@ export interface Formation {
 
 export type FormationId = '4-3-3' | '4-4-2' | '4-2-3-1' | '3-5-2' | '4-1-4-1' | '3-4-3';
 
+const gk = (): Slot => ({ id: 'gol', pos: 'GOL', x: 50, y: 91, num: 1 });
+
 const back4 = (): Slot[] => [
-  { id: 'gol', pos: 'GOL', x: 50, y: 91 },
-  { id: 'le', pos: 'LE', x: 12, y: 70 },
-  { id: 'zag1', pos: 'ZAG', x: 37, y: 76 },
-  { id: 'zag2', pos: 'ZAG', x: 63, y: 76 },
-  { id: 'ld', pos: 'LD', x: 88, y: 70 },
+  gk(),
+  { id: 'le', pos: 'DEF', x: 12, y: 70, num: 6 },
+  { id: 'zag1', pos: 'DEF', x: 37, y: 76, num: 3 },
+  { id: 'zag2', pos: 'DEF', x: 63, y: 76, num: 4 },
+  { id: 'ld', pos: 'DEF', x: 88, y: 70, num: 2 },
 ];
 
 const back3 = (): Slot[] => [
-  { id: 'gol', pos: 'GOL', x: 50, y: 91 },
-  { id: 'zag1', pos: 'ZAG', x: 27, y: 75 },
-  { id: 'zag2', pos: 'ZAG', x: 50, y: 78 },
-  { id: 'zag3', pos: 'ZAG', x: 73, y: 75 },
+  gk(),
+  { id: 'zag1', pos: 'DEF', x: 27, y: 75, num: 3 },
+  { id: 'zag2', pos: 'DEF', x: 50, y: 78, num: 4 },
+  { id: 'zag3', pos: 'DEF', x: 73, y: 75, num: 2 },
 ];
 
 const back4Links: [string, string][] = [
@@ -57,16 +66,16 @@ export const FORMATIONS: Formation[] = [
   {
     id: '4-3-3',
     name: '4-3-3',
-    tagline: 'Ofensivo com pontas',
-    description: 'Três atacantes abertos e um trio de meio-campo com volante de proteção. Pressiona e cria muitas chances.',
+    tagline: 'Ofensivo, com trio de ataque',
+    description: 'Quatro defensores, trio de meio-campo e três atacantes. Pressiona e cria muitas chances.',
     slots: [
       ...back4(),
-      { id: 'vol', pos: 'VOL', x: 50, y: 58 },
-      { id: 'mc', pos: 'MC', x: 29, y: 45 },
-      { id: 'mei', pos: 'MEI', x: 71, y: 45 },
-      { id: 'pe', pos: 'PE', x: 15, y: 21 },
-      { id: 'ca', pos: 'CA', x: 50, y: 14 },
-      { id: 'pd', pos: 'PD', x: 85, y: 21 },
+      { id: 'vol', pos: 'MEI', x: 50, y: 58, num: 5 },
+      { id: 'mc', pos: 'MEI', x: 29, y: 45, num: 8 },
+      { id: 'mei', pos: 'MEI', x: 71, y: 45, num: 10 },
+      { id: 'pe', pos: 'ATA', x: 15, y: 21, num: 11 },
+      { id: 'ca', pos: 'ATA', x: 50, y: 14, num: 9 },
+      { id: 'pd', pos: 'ATA', x: 85, y: 21, num: 7 },
     ],
     links: [
       ...back4Links,
@@ -89,15 +98,15 @@ export const FORMATIONS: Formation[] = [
     id: '4-4-2',
     name: '4-4-2',
     tagline: 'O clássico quadrado brasileiro',
-    description: 'Dois volantes, dois meias e dupla de ataque. Equilíbrio entre defesa e ataque, com laterais dando amplitude.',
+    description: 'Quatro defensores, quatro meio-campistas e dupla de ataque. Equilíbrio entre defesa e ataque.',
     slots: [
       ...back4(),
-      { id: 'vol', pos: 'VOL', x: 37, y: 58 },
-      { id: 'mc', pos: 'MC', x: 63, y: 58 },
-      { id: 'mei1', pos: 'MEI', x: 27, y: 38 },
-      { id: 'mei2', pos: 'MEI', x: 73, y: 38 },
-      { id: 'sa', pos: 'SA', x: 37, y: 16 },
-      { id: 'ca', pos: 'CA', x: 63, y: 16 },
+      { id: 'vol', pos: 'MEI', x: 37, y: 58, num: 5 },
+      { id: 'mc', pos: 'MEI', x: 63, y: 58, num: 8 },
+      { id: 'mei1', pos: 'MEI', x: 27, y: 38, num: 10 },
+      { id: 'mei2', pos: 'MEI', x: 73, y: 38, num: 7 },
+      { id: 'sa', pos: 'ATA', x: 37, y: 16, num: 11 },
+      { id: 'ca', pos: 'ATA', x: 63, y: 16, num: 9 },
     ],
     links: [
       ...back4Links,
@@ -119,15 +128,16 @@ export const FORMATIONS: Formation[] = [
     id: '4-2-3-1',
     name: '4-2-3-1',
     tagline: 'Controle do meio-campo',
-    description: 'Dupla de volantes, linha de três meias com um camisa 10 centralizado e um centroavante de referência.',
+    description: 'Dupla de proteção, dois meio-campistas abertos e dois atacantes: um por dentro, atrás do homem de referência.',
+    // vagas "pe" e "pd" são meio-campistas abertos; "mei" é o atacante por dentro
     slots: [
       ...back4(),
-      { id: 'vol', pos: 'VOL', x: 37, y: 59 },
-      { id: 'mc', pos: 'MC', x: 63, y: 59 },
-      { id: 'pe', pos: 'PE', x: 15, y: 33 },
-      { id: 'mei', pos: 'MEI', x: 50, y: 36 },
-      { id: 'pd', pos: 'PD', x: 85, y: 33 },
-      { id: 'ca', pos: 'CA', x: 50, y: 13 },
+      { id: 'vol', pos: 'MEI', x: 37, y: 59, num: 5 },
+      { id: 'mc', pos: 'MEI', x: 63, y: 59, num: 8 },
+      { id: 'pe', pos: 'MEI', x: 15, y: 35, num: 11 },
+      { id: 'mei', pos: 'ATA', x: 50, y: 33, num: 10 },
+      { id: 'pd', pos: 'MEI', x: 85, y: 35, num: 7 },
+      { id: 'ca', pos: 'ATA', x: 50, y: 13, num: 9 },
     ],
     links: [
       ...back4Links,
@@ -150,16 +160,17 @@ export const FORMATIONS: Formation[] = [
     id: '3-5-2',
     name: '3-5-2',
     tagline: 'Alas e meio povoado',
-    description: 'Três zagueiros, alas que percorrem o corredor inteiro e um meio-campo com cinco homens. Domina a posse.',
+    description: 'Três defensores, cinco meio-campistas (com os alas percorrendo os corredores) e dois atacantes. Domina a posse.',
+    // vagas "le" e "ld" são os alas, contados no meio-campo
     slots: [
       ...back3(),
-      { id: 'le', pos: 'LE', x: 9, y: 49 },
-      { id: 'vol', pos: 'VOL', x: 50, y: 59 },
-      { id: 'mc', pos: 'MC', x: 31, y: 44 },
-      { id: 'mei', pos: 'MEI', x: 69, y: 44 },
-      { id: 'ld', pos: 'LD', x: 91, y: 49 },
-      { id: 'sa', pos: 'SA', x: 37, y: 16 },
-      { id: 'ca', pos: 'CA', x: 63, y: 16 },
+      { id: 'le', pos: 'MEI', x: 9, y: 49, num: 6 },
+      { id: 'vol', pos: 'MEI', x: 50, y: 59, num: 5 },
+      { id: 'mc', pos: 'MEI', x: 31, y: 44, num: 8 },
+      { id: 'mei', pos: 'MEI', x: 69, y: 44, num: 10 },
+      { id: 'ld', pos: 'MEI', x: 91, y: 49, num: 7 },
+      { id: 'sa', pos: 'ATA', x: 37, y: 16, num: 11 },
+      { id: 'ca', pos: 'ATA', x: 63, y: 16, num: 9 },
     ],
     links: [
       ...back3Links,
@@ -180,15 +191,16 @@ export const FORMATIONS: Formation[] = [
     id: '4-1-4-1',
     name: '4-1-4-1',
     tagline: 'Compacto e seguro',
-    description: 'Um volante à frente da zaga, dois meio-campistas e dois pontas que fecham os lados. Difícil de ser vazado.',
+    description: 'Um meio-campista de proteção à frente da defesa, mais quatro na linha de meio e um atacante. Difícil de ser vazado.',
+    // vagas "pe" e "pd" são meio-campistas abertos
     slots: [
       ...back4(),
-      { id: 'vol', pos: 'VOL', x: 50, y: 60 },
-      { id: 'pe', pos: 'PE', x: 14, y: 36 },
-      { id: 'mc1', pos: 'MC', x: 36, y: 42 },
-      { id: 'mc2', pos: 'MC', x: 64, y: 42 },
-      { id: 'pd', pos: 'PD', x: 86, y: 36 },
-      { id: 'ca', pos: 'CA', x: 50, y: 14 },
+      { id: 'vol', pos: 'MEI', x: 50, y: 60, num: 5 },
+      { id: 'pe', pos: 'MEI', x: 14, y: 36, num: 11 },
+      { id: 'mc1', pos: 'MEI', x: 36, y: 42, num: 8 },
+      { id: 'mc2', pos: 'MEI', x: 64, y: 42, num: 10 },
+      { id: 'pd', pos: 'MEI', x: 86, y: 36, num: 7 },
+      { id: 'ca', pos: 'ATA', x: 50, y: 14, num: 9 },
     ],
     links: [
       ...back4Links,
@@ -210,16 +222,17 @@ export const FORMATIONS: Formation[] = [
     id: '3-4-3',
     name: '3-4-3',
     tagline: 'Ataque total',
-    description: 'Três zagueiros, linha de quatro no meio e trio ofensivo. Muito perigoso, mas exposto nos contra-ataques.',
+    description: 'Três defensores, quatro meio-campistas (com os alas) e trio de ataque. Muito perigoso, mas exposto nos contra-ataques.',
+    // vagas "le" e "ld" são os alas, contados no meio-campo
     slots: [
       ...back3(),
-      { id: 'le', pos: 'LE', x: 11, y: 50 },
-      { id: 'vol', pos: 'VOL', x: 38, y: 55 },
-      { id: 'mc', pos: 'MC', x: 62, y: 55 },
-      { id: 'ld', pos: 'LD', x: 89, y: 50 },
-      { id: 'pe', pos: 'PE', x: 17, y: 21 },
-      { id: 'ca', pos: 'CA', x: 50, y: 14 },
-      { id: 'pd', pos: 'PD', x: 83, y: 21 },
+      { id: 'le', pos: 'MEI', x: 11, y: 50, num: 6 },
+      { id: 'vol', pos: 'MEI', x: 38, y: 55, num: 5 },
+      { id: 'mc', pos: 'MEI', x: 62, y: 55, num: 8 },
+      { id: 'ld', pos: 'MEI', x: 89, y: 50, num: 10 },
+      { id: 'pe', pos: 'ATA', x: 17, y: 21, num: 11 },
+      { id: 'ca', pos: 'ATA', x: 50, y: 14, num: 9 },
+      { id: 'pd', pos: 'ATA', x: 83, y: 21, num: 7 },
     ],
     links: [
       ...back3Links,
@@ -247,4 +260,11 @@ export const FORMATION_BY_ID: Record<FormationId, Formation> = Object.fromEntrie
 
 export function getFormation(id: FormationId): Formation {
   return FORMATION_BY_ID[id];
+}
+
+/** Quantidade de vagas por categoria (ex.: 4-3-3 → 1 GOL, 4 DEF, 3 MEI, 3 ATA). */
+export function formationCounts(f: Formation): Record<Position, number> {
+  const out: Record<Position, number> = { GOL: 0, DEF: 0, MEI: 0, ATA: 0 };
+  for (const s of f.slots) out[s.pos]++;
+  return out;
 }

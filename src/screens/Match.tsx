@@ -5,7 +5,7 @@ import { COMP_NAMES, matchKey, simulateUserMatch, USER_ID, userFixture } from '.
 import { formatMinute, type MatchEvent, type MatchResult, type Side } from '../engine/match';
 import { aggregate, simulateShootout } from '../engine/cup';
 import { subSeed } from '../engine/rng';
-import { POSITION_NAMES } from '../data/types';
+import { POSITION_NAMES, toPosition } from '../data/types';
 import { TeamCrest } from '../components/TeamBadge';
 import { Confetti, NeedRun } from '../components/ui';
 import type { TeamSheet } from '../engine/team';
@@ -326,7 +326,7 @@ function LineupList({ t, result, side, done }: { t: TeamSheet; result: MatchResu
               <span className="num">{p.number}</span>
               <span className="grow">
                 {p.name} {p.captain && <span className="cap-mini">C</span>}
-                <span className="dim"> · {POSITION_NAMES[p.pos]}</span>
+                <span className="dim"> · {POSITION_NAMES[toPosition(p.pos)]}</span>
               </span>
               {done && l && (
                 <span className="row" style={{ gap: 6 }}>

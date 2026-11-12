@@ -1,6 +1,7 @@
 // Mata-mata em ida e volta (Copa do Brasil / fases finais dos estaduais),
 // com disputa de pênaltis em caso de empate no agregado.
 
+import { toPosition } from '../data/types';
 import { Rng, subSeed } from './rng';
 import type { PlayedMatch } from './league';
 import type { TeamSheet } from './team';
@@ -80,8 +81,8 @@ export interface ShootoutKick {
 /** Disputa de pênaltis: 5 cobranças e depois alternadas. */
 export function simulateShootout(home: TeamSheet, away: TeamSheet, seed: number): { kicks: ShootoutKick[]; score: [number, number] } {
   const rng = new Rng(subSeed(seed, 'penaltis'));
-  const takers = (t: TeamSheet) => [...t.players].filter((p) => p.pos !== 'GOL').sort((x, y) => y.eff - x.eff);
-  const gk = (t: TeamSheet) => t.players.find((p) => p.pos === 'GOL')?.eff ?? 75;
+  const takers = (t: TeamSheet) => [...t.players].filter((p) => toPosition(p.pos) !== 'GOL').sort((x, y) => y.eff - x.eff);
+  const gk = (t: TeamSheet) => t.players.find((p) => toPosition(p.pos) === 'GOL')?.eff ?? 75;
   const th = takers(home);
   const ta = takers(away);
   const kicks: ShootoutKick[] = [];

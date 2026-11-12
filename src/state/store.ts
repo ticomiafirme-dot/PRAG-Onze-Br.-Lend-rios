@@ -24,6 +24,7 @@ import { dailyChallenge, weeklyChallenge, type ChallengeConfig } from '../engine
 import { Rng, randomSeed, subSeed } from '../engine/rng';
 import { markChallenge, STORAGE_PREFIX } from './storage';
 import { recordRanking } from './ranking';
+import { migratePersisted } from './migrate';
 
 export type Phase = 'setup' | 'draft' | 'lineup' | 'captain' | 'preseason' | 'season' | 'finished';
 
@@ -307,7 +308,9 @@ export const useGame = create<GameState>()(
     }),
     {
       name: `${STORAGE_PREFIX}:state`,
-      version: 1,
+      // v2: posições em 4 categorias (GOL, DEF, MEI, ATA)
+      version: 2,
+      migrate: (state, version) => migratePersisted(state, version) as GameState,
       storage: createJSONStorage(() => {
         try {
           const k = '__obl_test__';

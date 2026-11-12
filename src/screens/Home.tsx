@@ -167,7 +167,7 @@ export function Home() {
           </li>
           <li>
             <span className="step-n">2</span>
-            <strong>Draft por sorteio.</strong> A cada rodada uma década é sorteada; escolha um jogador dela para uma posição livre. Você
+            <strong>Draft por sorteio.</strong> A cada rodada uma década é sorteada; escolha um jogador dela para uma vaga livre (GOL, DEF, MEI ou ATA). Você
             tem 5 novos sorteios.
           </li>
           <li>

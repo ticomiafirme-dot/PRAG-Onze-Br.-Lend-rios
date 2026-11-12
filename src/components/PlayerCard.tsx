@@ -71,7 +71,7 @@ interface Props {
   size?: 'sm' | 'md' | 'lg';
   /** Overall a exibir (ex.: efetivo com capitão/química). */
   overall?: number;
-  /** Posição em que está escalado (se diferente da principal). */
+  /** Categoria da vaga em que está escalado (padrão: a categoria principal). */
   pos?: Position;
   captain?: boolean;
   selected?: boolean;
@@ -86,7 +86,7 @@ export function PlayerCard({ card, size = 'md', overall, pos, captain, selected,
   const ovr = overall ?? card.overall;
   const tier = tierOf(card.overall);
   const club = CLUB_BY_ID[card.club];
-  const position = pos ?? card.player.position;
+  const position = pos ?? card.positions[0];
   const Tag = onClick ? 'button' : 'div';
   return (
     <Tag

@@ -21,6 +21,17 @@ async function run(label, contextOpts) {
   page.on('console', (m) => {
     if (m.type() === 'error' && !/Failed to load resource|ERR_|net::/.test(m.text())) errors.push(`console: ${m.text()}`);
   });
+  const CATS = ['GOL', 'DEF', 'MEI', 'ATA'];
+  // só as 4 categorias aparecem nas cartas, abas e vagas
+  const checkCategories = async (where) => {
+    const texts = [
+      ...(await page.locator('.pcard-pos').allTextContents()),
+      ...(await page.locator('.slot-empty').allTextContents()),
+      ...(await page.locator('.offers-panel [role=tab]').allTextContents()).map((t) => t.trim().split(/\s+/)[0]),
+    ];
+    const bad = texts.map((t) => t.trim()).filter((t) => !CATS.includes(t));
+    if (bad.length) errors.push(`${where}: posições fora das 4 categorias: ${[...new Set(bad)].join(', ')}`);
+  };
   const shot = async (name) => page.screenshot({ path: path.join(OUT, `${label}-${name}.png`), fullPage: false });
   const step = (s) => console.log(`[${label}] ${s}`);
 
@@ -51,10 +62,31 @@ async function run(label, contextOpts) {
       await page.waitForSelector('.roulette.is-spinning');
       await page.waitForSelector('.roulette.is-done', { timeout: 8000 });
     }
+    // na 4ª rodada, toca na última vaga dourada do campo: o jogador deve entrar nela
+    let target = null;
+    if (round === 3) {
+      const gold = page.locator('.slot-empty.has-offer');
+      const n = await gold.count();
+      if (n > 1) {
+        target = gold.nth(n - 1);
+        const cat = (await target.textContent()).trim();
+        const index = await target.evaluate((el) => [...document.querySelectorAll('.draft-pitch .pitch-slot')].indexOf(el.closest('.pitch-slot')));
+        await target.click();
+        const head = await page.locator('.offers-panel h2').textContent();
+        if (!head.includes(`(${cat})`)) errors.push(`vaga ${cat} tocada, mas o painel mostra "${head}"`);
+        target = { cat, index };
+      }
+    }
     const card = page.locator('.offers button.pcard').first();
     await card.waitFor({ timeout: 8000 });
+    await checkCategories(`draft r${round + 1}`);
     await card.click();
     await page.waitForTimeout(150);
+    if (target) {
+      // a vaga tocada agora tem um jogador
+      const filled = await page.locator('.draft-pitch .pitch-slot').nth(target.index).locator('.pcard').count();
+      if (!filled) errors.push(`o jogador não entrou na vaga ${target.cat} tocada`);
+    }
   }
   await page.waitForSelector('.draft-done', { timeout: 8000 });
   await shot('06-draft-completo');
@@ -62,6 +94,15 @@ async function run(label, contextOpts) {
   step('escalação');
   await page.waitForTimeout(400);
   await shot('07-escalacao');
+  await checkCategories('escalação');
+  // troca entre dois defensores (ex.: zagueiro ↔ lateral) deve ser aceita
+  const defs = page.locator('[aria-label$=", Defensor"]');
+  if ((await defs.count()) >= 2) {
+    await defs.nth(0).click();
+    await defs.nth(1).click();
+    const toast = await page.locator('.toast').last().textContent({ timeout: 3000 }).catch(() => '');
+    if (!/trocaram de posição/.test(toast)) errors.push(`troca entre defensores recusada: "${toast}"`);
+  } else errors.push('escalação sem dois defensores');
   await page.getByRole('button', { name: /Escolher capitão/i }).click();
   await page.waitForURL(/#capitao/);
   await page.locator('.captain-grid button.pcard').nth(10).click();

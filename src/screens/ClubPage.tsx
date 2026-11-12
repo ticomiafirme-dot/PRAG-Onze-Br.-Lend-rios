@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { CLUB_BY_ID } from '../data/clubs';
 import { db } from '../data/db';
-import { decadeLabel, POSITION_NAMES, POSITIONS, type Decade, type Position } from '../data/types';
+import { decadeLabel, POSITION_PLURAL, POSITIONS, type Decade, type Position } from '../data/types';
 import { FORMATIONS } from '../data/formations';
+import { positionsOf } from '../engine/database';
 import { feasibleFormationsForDecade } from '../engine/draft';
 import { navigate } from '../router';
 import { MODE_INFO, useGame } from '../state/store';
@@ -54,7 +55,7 @@ export function ClubPage({ id }: { id: string }) {
   const players = db.playersByClub.get(club.id) ?? [];
   const bank = players
     .filter((p) => (bankDecade === 'all' ? true : p.eras[bankDecade] != null))
-    .filter((p) => (bankPos === 'all' ? true : p.position === bankPos || p.secondary.includes(bankPos)))
+    .filter((p) => (bankPos === 'all' ? true : positionsOf(p).includes(bankPos)))
     .map((p) => ({ p, ovr: bankDecade === 'all' ? Math.max(...Object.values(p.eras).map(Number)) : p.eras[bankDecade]! }))
     .sort((a, b) => b.ovr - a.ovr);
 
@@ -149,7 +150,7 @@ export function ClubPage({ id }: { id: string }) {
             <option value="all">Todas as posições</option>
             {POSITIONS.map((p) => (
               <option key={p} value={p}>
-                {POSITION_NAMES[p]}
+                {POSITION_PLURAL[p]}
               </option>
             ))}
           </select>
@@ -180,7 +181,7 @@ export function ClubPage({ id }: { id: string }) {
                     {p.editorial && <span className="dim"> ★</span>}
                     <div className="dim bank-desc">{p.description}</div>
                   </td>
-                  <td>{[p.position, ...p.secondary].join('/')}</td>
+                  <td>{positionsOf(p).join('/')}</td>
                   <td>
                     <Flag code={p.nationality} size={13} />
                   </td>

@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { CLUB_BY_ID } from '../data/clubs';
 import { db } from '../data/db';
-import { decadeLabel } from '../data/types';
-import { FORMATIONS, type Formation } from '../data/formations';
+import { decadeLabel, POSITION_PLURAL, POSITIONS } from '../data/types';
+import { FORMATIONS, formationCounts, type Formation } from '../data/formations';
 import { feasibleFormationsForClub, feasibleFormationsForDecade } from '../engine/draft';
 import { DIFFICULTIES } from '../engine/team';
 import { navigate } from '../router';
@@ -107,9 +107,13 @@ function FormationCard({ f, selected, disabled, onClick }: { f: Formation; selec
       <div className="formation-info">
         <h3>{f.name}</h3>
         <strong className="gold-text">{f.tagline}</strong>
-        <p className="muted">{disabled ? 'Esta era não tem jogadores para todas as posições desta formação.' : f.description}</p>
-        <div className="row wrap" style={{ gap: 6 }}>
-          {f.slots.map((s) => s.pos).join(' · ')}
+        <p className="muted">{disabled ? 'Esta era não tem jogadores para todas as vagas desta formação.' : f.description}</p>
+        <div className="row wrap formation-counts" style={{ gap: 6 }}>
+          {POSITIONS.map((p) => (
+            <span key={p} className="chip" title={POSITION_PLURAL[p]}>
+              {formationCounts(f)[p]} {p}
+            </span>
+          ))}
         </div>
       </div>
     </button>

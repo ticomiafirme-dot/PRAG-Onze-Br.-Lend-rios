@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { useGame } from '../state/store';
 import { COMP_NAMES, USER_ID, userPlayerStats, type Campaign, type CompId } from '../engine/campaign';
 import { topScorers } from '../engine/league';
-import { POSITION_NAMES, type Position } from '../data/types';
+import { POSITION_NAMES, toPosition } from '../data/types';
+import { countsCleanSheet } from '../engine/match';
 import { TeamName } from '../components/TeamBadge';
 import { BackLink, NeedRun } from '../components/ui';
 
@@ -150,7 +151,7 @@ function StatsInner() {
                   <td className="l">
                     <strong>{r.name}</strong>
                   </td>
-                  <td title={POSITION_NAMES[r.pos as Position]}>{r.pos}</td>
+                  <td title={POSITION_NAMES[toPosition(r.pos)]}>{toPosition(r.pos)}</td>
                   <td>{r.games}</td>
                   <td className="stat-num">{r.goals}</td>
                   <td>{r.assists}</td>
@@ -158,8 +159,8 @@ function StatsInner() {
                   <td>{r.mvps}</td>
                   <td>{r.yellow}</td>
                   <td>{r.red}</td>
-                  <td>{r.pos === 'GOL' ? r.saves : '—'}</td>
-                  <td>{['GOL', 'ZAG', 'LD', 'LE'].includes(r.pos) ? r.cleanSheets : '—'}</td>
+                  <td>{toPosition(r.pos) === 'GOL' ? r.saves : '—'}</td>
+                  <td>{countsCleanSheet(r.pos) ? r.cleanSheets : '—'}</td>
                 </tr>
               ))}
             </tbody>

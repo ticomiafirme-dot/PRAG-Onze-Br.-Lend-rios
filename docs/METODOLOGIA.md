@@ -20,6 +20,19 @@ Para cada clube e década oferecida, o script `scripts/data/build.mjs` escolhe:
 
 Posições secundárias naturais: volante → meio-campista; meia → meio-campista; centroavante ↔ segundo atacante.
 
+### Categorias usadas no jogo
+
+A base guarda a função histórica de cada jogador (como registrada na fonte), mas o jogo usa só quatro categorias:
+
+| Funções históricas | Categoria |
+| --- | --- |
+| Goleiro | GOL |
+| Zagueiro, lateral direito, lateral esquerdo | DEF |
+| Volante, meio-campista, meia | MEI |
+| Ponta direita, ponta esquerda, segundo atacante, centroavante | ATA |
+
+O jogador pertence à categoria da função principal e às das funções secundárias registradas, e pode ocupar qualquer vaga dessas categorias. A função histórica só dá nuances à simulação (um centroavante finaliza mais que um ponta, um zagueiro cabeceia mais que um lateral); quando o jogador atua numa categoria que não é a da sua função principal, vale a média da categoria. As notas, clubes e décadas não mudam com a categoria.
+
 ## 3. Notas (overall de 1 a 99)
 
 As notas são **avaliações editoriais do jogo, não notas oficiais**.

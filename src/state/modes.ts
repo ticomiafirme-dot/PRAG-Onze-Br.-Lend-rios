@@ -10,7 +10,7 @@ export const MODE_INFO: Record<GameMode, { name: string; short: string; descript
   era: {
     name: 'Era Única',
     short: 'Era Única',
-    description: 'Clube e década fixos. A cada rodada, três jogadores daquela era são sorteados por posição.',
+    description: 'Clube e década fixos. A cada rodada, três jogadores daquela era são sorteados por categoria (GOL, DEF, MEI, ATA).',
   },
   mistura: {
     name: 'Mistura Brasileira',

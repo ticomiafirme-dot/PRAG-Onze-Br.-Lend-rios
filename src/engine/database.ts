@@ -1,5 +1,5 @@
 import type { Card, Club, Decade, PlayerRecord, Position } from '../data/types';
-import { DECADES } from '../data/types';
+import { DECADES, ROLE_CATEGORY } from '../data/types';
 
 /**
  * Banco de dados em memória com índices para o draft.
@@ -21,13 +21,14 @@ export class Database {
       const players = playersByClub[club.id] ?? [];
       this.playersByClub.set(club.id, players);
       for (const p of players) {
+        const positions = positionsOf(p);
         const list = this.recordsByPerson.get(p.id) ?? [];
         list.push({ club: club.id, record: p });
         this.recordsByPerson.set(p.id, list);
         for (const d of DECADES) {
           const ovr = p.eras[d];
           if (ovr == null || !club.decades.includes(d)) continue;
-          const card: Card = { key: cardKey(p.id, club.id, d), id: p.id, club: club.id, decade: d, overall: ovr, player: p };
+          const card: Card = { key: cardKey(p.id, club.id, d), id: p.id, club: club.id, decade: d, overall: ovr, player: p, positions };
           const k = clubDecadeKey(club.id, d);
           const arr = this.cardsByClubDecade.get(k) ?? [];
           arr.push(card);
@@ -79,11 +80,20 @@ export function clubDecadeKey(club: string, decade: Decade): string {
   return `${club}|${decade}`;
 }
 
-/** Posições que uma carta pode ocupar (principal + secundárias). */
-export function cardPositions(card: Card): Position[] {
-  return [card.player.position, ...card.player.secondary];
+/**
+ * Categorias de um jogador: a da função principal e, se ele também atuou em
+ * funções de outra categoria (ex.: lateral que jogou no meio), essa também.
+ */
+export function positionsOf(p: PlayerRecord): Position[] {
+  const out: Position[] = [ROLE_CATEGORY[p.position] ?? 'MEI'];
+  for (const r of p.secondary) {
+    const c = ROLE_CATEGORY[r];
+    if (c && !out.includes(c)) out.push(c);
+  }
+  return out;
 }
 
+/** A carta pode ocupar uma vaga desta categoria? */
 export function canPlay(card: Card, pos: Position): boolean {
-  return card.player.position === pos || card.player.secondary.includes(pos);
+  return card.positions.includes(pos);
 }
