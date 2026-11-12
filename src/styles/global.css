@@ -11,9 +11,19 @@ html {
   scroll-behavior: smooth;
 }
 
+/* faixa da área segura superior (celulares), na cor do cabeçalho */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 50;
+  background: #030a1f;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100%;
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.5;
@@ -69,7 +79,7 @@ p {
 
 /* ---------- Layout ---------- */
 .app {
-  min-height: 100vh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -79,7 +89,9 @@ p {
   min-width: 0;
   max-width: var(--max-w);
   margin: 0 auto;
-  padding: 20px var(--gutter) 64px;
+  padding-block: 20px 64px;
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
   animation: page-in 0.45s var(--ease-out) both;
 }
 
@@ -436,7 +448,7 @@ table.data tr.me {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 22px;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   z-index: 80;
   background: #0b1a3f;
@@ -464,7 +476,9 @@ table.data tr.me {
   backdrop-filter: blur(4px);
   display: grid;
   place-items: center;
-  padding: 16px;
+  padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
   animation: fade-in 0.2s both;
 }
 

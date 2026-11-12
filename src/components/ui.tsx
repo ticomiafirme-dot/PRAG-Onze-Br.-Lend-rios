@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Logo } from './Logo';
-import { navigate, useRoute } from '../router';
+import { navigate, toHash, useRoute } from '../router';
 import { tierOf } from './PlayerCard';
 import { LINK_COLORS } from './Pitch';
 
 export function Header() {
   const route = useRoute();
   const link = (to: string, label: string, cls = '') => (
-    <a href={`#${to}`} className={`nav-link ${route.path === to ? 'active' : ''} ${cls}`}>
+    <a href={toHash(to)} className={`nav-link ${route.path === to ? 'active' : ''} ${cls}`}>
       {label}
     </a>
   );
   return (
     <header className="header">
       <div className="header-inner">
-        <a href="#/" className="logo-link" aria-label="Início">
+        <a href="#inicio" className="logo-link" aria-label="Início">
           <Logo compact />
         </a>
         <nav aria-label="Principal">

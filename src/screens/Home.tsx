@@ -87,7 +87,7 @@ export function Home() {
                 Jogar agora
               </button>
             )}
-            <a className="btn btn-ghost" href="#/como-jogar">
+            <a className="btn btn-ghost" href="#como-jogar">
               Como jogar
             </a>
           </div>

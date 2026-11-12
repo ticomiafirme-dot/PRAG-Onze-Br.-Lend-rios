@@ -3,6 +3,7 @@ import { db } from '../data/db';
 import { summarize, USER_ID } from '../engine/campaign';
 import { addRankingEntry, loadPlayerName, type RankingEntry } from './storage';
 import { MODE_INFO } from './modes';
+import { submitShared } from './sharedRanking';
 import type { Run } from './store';
 
 export function buildRankingEntry(run: Run, playerName = loadPlayerName()): RankingEntry | null {
@@ -38,8 +39,11 @@ export function buildRankingEntry(run: Run, playerName = loadPlayerName()): Rank
   };
 }
 
-/** Registra a campanha no ranking (idempotente: a mesma partida substitui a anterior). */
-export function recordRanking(run: Run, playerName?: string): void {
+/** Registra a campanha no ranking local e, quando disponível, no compartilhado
+ *  (idempotente: a mesma partida substitui o registro anterior). */
+export function recordRanking(run: Run, playerName?: string, opts: { shared?: boolean } = { shared: true }): void {
   const entry = buildRankingEntry(run, playerName);
-  if (entry) addRankingEntry(entry);
+  if (!entry) return;
+  addRankingEntry(entry);
+  if (opts.shared) void submitShared(entry);
 }

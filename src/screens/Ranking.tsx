@@ -1,12 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CLUB_BY_ID } from '../data/clubs';
 import { loadRanking, type RankingEntry } from '../state/storage';
+import { flattenShared, getSharedRanking, type SharedEntry } from '../state/sharedRanking';
 import { brazilDateKey, brazilWeekKey } from '../engine/challenges';
 import { Crest } from '../components/Crest';
 import { LogoMark } from '../components/Logo';
 import { BackLink } from '../components/ui';
 
 type Filter = 'geral' | 'diario' | 'semanal' | 'classico' | 'era' | 'mistura' | 'triplice';
+type Scope = 'shared' | 'local';
+type Status = 'idle' | 'loading' | 'live' | 'stale' | 'offline';
 
 const FILTERS: [Filter, string][] = [
   ['geral', 'Geral'],
@@ -20,10 +23,56 @@ const FILTERS: [Filter, string][] = [
 
 export function Ranking() {
   const [filter, setFilter] = useState<Filter>('geral');
-  const all = useMemo(() => loadRanking(), []);
+  const [scope, setScope] = useState<Scope>('local');
+  const [sharedOn, setSharedOn] = useState(false);
+  const [shared, setShared] = useState<SharedEntry[]>([]);
+  const [names, setNames] = useState<Record<string, string>>({});
+  const [status, setStatus] = useState<Status>('idle');
+  const local = useMemo(() => loadRanking(), []);
+
+  // ranking compartilhado: assina uma vez a coleção, com limite de espera de 10 s
+  useEffect(() => {
+    let alive = true;
+    let unsub: (() => void) | null = null;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    getSharedRanking().then((sh) => {
+      if (!alive || !sh) return;
+      setSharedOn(true);
+      setScope('shared');
+      setStatus('loading');
+      timer = setTimeout(() => setStatus((s) => (s === 'loading' ? 'offline' : s === 'live' ? s : 'stale')), 10000);
+      unsub = sh.db.collection('ranking').onSnapshot(
+        (snap) => {
+          const list = flattenShared(snap);
+          setShared(list);
+          if (!snap.metadata.fromCache) {
+            clearTimeout(timer);
+            setStatus('live');
+          }
+          const ids = [...new Set(list.map((e) => e.uid))];
+          if (ids.length)
+            sh.user.profiles(ids).then((ps) => {
+              if (!alive) return;
+              setNames(Object.fromEntries(ids.map((id) => [id, ps[id]?.isMe ? `${ps[id].name || 'Você'} (você)` : ps[id]?.name || 'Jogador'])));
+            });
+        },
+        () => {
+          clearTimeout(timer);
+          setStatus('offline');
+        },
+      );
+    });
+    return () => {
+      alive = false;
+      unsub?.();
+      clearTimeout(timer);
+    };
+  }, []);
+
   const today = `diario:${brazilDateKey()}`;
   const week = `semanal:${brazilWeekKey()}`;
-  const list = all.filter((e) => {
+  const source: (RankingEntry & { uid?: string })[] = scope === 'shared' ? shared : local;
+  const list = source.filter((e) => {
     if (filter === 'geral') return true;
     if (filter === 'diario') return e.challengeKey === today;
     if (filter === 'semanal') return e.challengeKey === week;
@@ -36,10 +85,30 @@ export function Ranking() {
         <div>
           <div className="eyebrow">Melhores campanhas</div>
           <h1>Ranking</h1>
-          <p className="muted">Critérios: pontos, vitórias, saldo de gols e gols marcados. Ranking salvo neste dispositivo.</p>
+          <p className="muted">Critérios: pontos, vitórias, saldo de gols e gols marcados.</p>
         </div>
         <BackLink to="/" />
       </div>
+
+      {sharedOn && (
+        <div className="row wrap" style={{ marginBottom: 10 }}>
+          <div className="tabs" role="tablist" aria-label="Quais campanhas">
+            <button className="tab" role="tab" aria-selected={scope === 'shared'} onClick={() => setScope('shared')}>
+              Todos os jogadores
+            </button>
+            <button className="tab" role="tab" aria-selected={scope === 'local'} onClick={() => setScope('local')}>
+              Neste aparelho
+            </button>
+          </div>
+          {scope === 'shared' && (
+            <span className={`chip ${status === 'live' ? 'chip-green' : ''}`}>
+              {status === 'live' ? 'Ao vivo' : status === 'loading' ? 'Carregando…' : status === 'stale' ? 'Pode estar desatualizado' : 'Ranking compartilhado indisponível agora'}
+            </span>
+          )}
+        </div>
+      )}
+      {!sharedOn && <p className="dim" style={{ marginBottom: 10, fontSize: 13 }}>Ranking salvo neste dispositivo.</p>}
+
       <div className="tabs" style={{ marginBottom: 14 }}>
         {FILTERS.map(([id, label]) => (
           <button key={id} className="tab" aria-selected={filter === id} onClick={() => setFilter(id)}>
@@ -49,7 +118,9 @@ export function Ranking() {
       </div>
       {list.length === 0 ? (
         <div className="empty panel">
-          Nenhuma campanha registrada {filter === 'geral' ? 'ainda' : 'nesta categoria'}. Termine uma temporada para entrar no ranking.
+          {scope === 'shared' && status === 'loading'
+            ? 'Carregando o ranking de todos os jogadores…'
+            : `Nenhuma campanha registrada ${filter === 'geral' ? 'ainda' : 'nesta categoria'}. Termine uma temporada para entrar no ranking.`}
         </div>
       ) : (
         <div className="table-wrap">
@@ -69,8 +140,8 @@ export function Ranking() {
               </tr>
             </thead>
             <tbody>
-              {list.map((e, i) => (
-                <Row key={e.id} e={e} i={i} />
+              {list.slice(0, 200).map((e, i) => (
+                <Row key={`${e.uid ?? 'local'}-${e.id}`} e={e} i={i} who={e.uid ? (names[e.uid] ?? 'Jogador') : e.playerName || 'Anônimo'} />
               ))}
             </tbody>
           </table>
@@ -80,13 +151,13 @@ export function Ranking() {
   );
 }
 
-function Row({ e, i }: { e: RankingEntry; i: number }) {
+function Row({ e, i, who }: { e: RankingEntry; i: number; who: string }) {
   const club = e.clubId ? CLUB_BY_ID[e.clubId] : null;
   return (
     <tr>
       <td className="stat-num">{i + 1}</td>
       <td className="l">
-        <strong>{e.playerName}</strong>
+        <strong>{who}</strong>
       </td>
       <td className="l">
         <span className="team-name">

@@ -10,7 +10,7 @@ import { topScorers } from '../engine/league';
 import { DIFFICULTIES } from '../engine/team';
 import { PlayerCard } from '../components/PlayerCard';
 import { TeamCrest } from '../components/TeamBadge';
-import { Confetti, NeedRun, useToast } from '../components/ui';
+import { Confetti, Modal, NeedRun, useToast } from '../components/ui';
 
 export function Final() {
   const run = useGame((s) => s.run);
@@ -34,6 +34,7 @@ function FinalInner() {
   const formation = getFormation(run.formationId!);
   const [name, setName] = useState(loadPlayerName());
   const [toast, showToast] = useToast();
+  const [showShare, setShowShare] = useState(false);
   const players = userPlayerStats(c);
   const top = [...players].sort((a, b) => b.goals - a.goals)[0];
   const best = [...players].sort((a, b) => b.rating - a.rating)[0];
@@ -93,7 +94,7 @@ function FinalInner() {
 
   const saveName = () => {
     savePlayerName(name);
-    recordRanking(run, name);
+    recordRanking(run, name, { shared: false });
     showToast('Nome salvo no ranking.');
   };
 
@@ -106,19 +107,20 @@ function FinalInner() {
   ].join('\n');
 
   const share = async () => {
+    // 1) compartilhamento nativo (celular)  2) copiar  3) mostrar o texto para copiar à mão
     try {
       if (navigator.share) {
         await navigator.share({ title: 'Onze BR Lendário PRAG', text: shareText });
         return;
       }
-    } catch {
-      /* usuário cancelou */
+    } catch (e) {
+      if ((e as DOMException)?.name === 'AbortError') return;
     }
     try {
       await navigator.clipboard.writeText(shareText);
       showToast('Resumo copiado! Cole onde quiser compartilhar.');
     } catch {
-      showToast('Não foi possível copiar automaticamente.');
+      setShowShare(true);
     }
   };
 
@@ -229,16 +231,38 @@ function FinalInner() {
         <button className="btn btn-gold btn-lg" onClick={share}>
           Compartilhar
         </button>
-        <a className="btn btn-ghost" href="#/estatisticas">
+        <a className="btn btn-ghost" href="#estatisticas">
           Estatísticas
         </a>
-        <a className="btn btn-ghost" href="#/ranking">
+        <a className="btn btn-ghost" href="#ranking">
           Ranking
         </a>
         <button className="btn btn-blue" onClick={again}>
           Jogar de novo
         </button>
       </div>
+      {showShare && (
+        <Modal label="Compartilhar resultado" onClose={() => setShowShare(false)}>
+          <h3 style={{ fontSize: 24, marginBottom: 8 }}>Copie o resumo</h3>
+          <p className="muted" style={{ marginBottom: 10 }}>
+            Selecione o texto abaixo e copie para compartilhar.
+          </p>
+          <textarea
+            id="share-text"
+            className="share-text"
+            readOnly
+            value={shareText}
+            rows={7}
+            onFocus={(e) => e.currentTarget.select()}
+            autoFocus
+          />
+          <div className="row" style={{ justifyContent: 'flex-end', marginTop: 12 }}>
+            <button className="btn btn-gold" onClick={() => setShowShare(false)}>
+              Fechar
+            </button>
+          </div>
+        </Modal>
+      )}
       {toast}
       {run.clubId && <span className="sr-only">{CLUB_BY_ID[run.clubId].name}</span>}
     </div>

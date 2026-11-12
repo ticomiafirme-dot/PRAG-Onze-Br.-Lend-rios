@@ -1,13 +1,14 @@
 /* ---------- Cabeçalho ---------- */
 .header {
   position: sticky;
-  top: 0;
+  top: env(safe-area-inset-top, 0px);
   z-index: 40;
   height: var(--header-h);
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 var(--gutter);
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
   background: rgba(3, 10, 31, 0.82);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);

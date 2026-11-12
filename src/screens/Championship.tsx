@@ -71,11 +71,11 @@ function ChampionshipInner() {
           <h1>Campeonato</h1>
         </div>
         <div className="row wrap">
-          <a className="btn btn-ghost btn-sm" href="#/estatisticas">
+          <a className="btn btn-ghost btn-sm" href="#estatisticas">
             Estatísticas
           </a>
           {c.finished && (
-            <a className="btn btn-gold" href="#/resultado">
+            <a className="btn btn-gold" href="#resultado">
               Resultado final
             </a>
           )}

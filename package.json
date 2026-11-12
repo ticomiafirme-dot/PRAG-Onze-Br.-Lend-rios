@@ -20,7 +20,8 @@
     "data:extract": "node scripts/data/extract.mjs",
     "data:photos": "node scripts/data/photos.mjs",
     "data:build": "node scripts/data/build.mjs",
-    "data:csv": "node scripts/data/export-csv.mjs"
+    "data:csv": "node scripts/data/export-csv.mjs",
+    "build:artifact": "tsc -b && vite build --mode single && node scripts/build-artifact.mjs"
   },
   "dependencies": {
     "@fontsource/barlow": "5.3.0",

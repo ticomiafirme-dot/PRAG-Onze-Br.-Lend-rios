@@ -27,18 +27,18 @@ async function run(label, contextOpts) {
   await page.goto(BASE);
   await page.getByRole('button', { name: /Jogar agora/i }).click();
   step('home -> clubes');
-  await page.waitForURL(/#\/clubes/);
+  await page.waitForURL(/#clubes/);
   await shot('02-clubes');
   await page.locator('.club-tile', { hasText: 'Corinthians' }).click();
-  await page.waitForURL(/#\/clube\/corinthians/);
+  await page.waitForURL(/#clube-corinthians/);
   await shot('03-clube');
   step('clube -> formação');
   await page.getByRole('button', { name: /Sortear décadas/i }).click();
-  await page.waitForURL(/#\/formacao/);
+  await page.waitForURL(/#formacao/);
   await page.locator('.formation-card', { hasText: '4-3-3' }).click();
   await shot('04-formacao');
   await page.getByRole('button', { name: /Iniciar draft/i }).click();
-  await page.waitForURL(/#\/draft/);
+  await page.waitForURL(/#draft/);
   step('draft');
   let used = 0;
   for (let round = 0; round < 11; round++) {
@@ -58,24 +58,24 @@ async function run(label, contextOpts) {
   }
   await page.waitForSelector('.draft-done', { timeout: 8000 });
   await shot('06-draft-completo');
-  await page.waitForURL(/#\/escalacao/, { timeout: 8000 });
+  await page.waitForURL(/#escalacao/, { timeout: 8000 });
   step('escalação');
   await page.waitForTimeout(400);
   await shot('07-escalacao');
   await page.getByRole('button', { name: /Escolher capitão/i }).click();
-  await page.waitForURL(/#\/capitao/);
+  await page.waitForURL(/#capitao/);
   await page.locator('.captain-grid button.pcard').nth(10).click();
   await shot('08-capitao');
   await page.getByRole('button', { name: /pré-temporada/i }).click();
-  await page.waitForURL(/#\/pre-temporada/);
+  await page.waitForURL(/#pre-temporada/);
   step('pré-temporada');
   await shot('09-pretemporada');
   await page.getByRole('button', { name: /Iniciar temporada/i }).click();
-  await page.waitForURL(/#\/campeonato/);
+  await page.waitForURL(/#campeonato/);
   await shot('10-campeonato');
   step('partida');
   await page.getByRole('button', { name: /Jogar partida/i }).click();
-  await page.waitForURL(/#\/partida/);
+  await page.waitForURL(/#partida/);
   await page.getByRole('button', { name: '4x' }).click();
   await page.waitForTimeout(3500);
   await shot('11-partida-ao-vivo');
@@ -86,29 +86,29 @@ async function run(label, contextOpts) {
   await page.waitForTimeout(2200);
   await shot('13-partida-fim');
   await page.getByRole('button', { name: /Continuar →/i }).click();
-  await page.waitForURL(/#\/campeonato/);
+  await page.waitForURL(/#campeonato/);
   // simula um jogo rápido e depois o restante
   await page.getByRole('button', { name: /Simular resultado/i }).click();
   await page.waitForTimeout(300);
   await page.getByRole('button', { name: /Simular até o fim/i }).click();
   await page.getByRole('dialog').getByRole('button', { name: /^Simular$/ }).click();
-  await page.waitForURL(/#\/resultado/);
+  await page.waitForURL(/#resultado/);
   step('resultado');
   await page.waitForTimeout(1200);
   await shot('14-resultado');
-  await page.goto(BASE + '#/estatisticas');
+  await page.goto(BASE + '#estatisticas');
   await page.waitForSelector('.kpi-grid');
   await shot('15-estatisticas');
-  await page.goto(BASE + '#/ranking');
+  await page.goto(BASE + '#ranking');
   await page.waitForSelector('table.data');
   await shot('16-ranking');
-  await page.goto(BASE + '#/');
+  await page.goto(BASE + '#inicio');
   await page.waitForSelector('.hero');
   await shot('01-home');
 
   // Persistência: recarrega e verifica que o ranking continua lá
   await page.reload();
-  await page.goto(BASE + '#/ranking');
+  await page.goto(BASE + '#ranking');
   const rows = await page.locator('table.data tbody tr').count();
   if (rows < 1) errors.push('ranking vazio após recarregar');
 

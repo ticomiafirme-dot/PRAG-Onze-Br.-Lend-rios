@@ -29,7 +29,7 @@
 
 .sticky-cta {
   position: sticky;
-  bottom: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   margin-top: 22px;
   z-index: 5;
 }
@@ -1659,4 +1659,15 @@
 
 .photo-credits a:hover {
   color: var(--gold-300);
+}
+
+.share-text {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: rgba(3, 10, 31, 0.6);
+  color: var(--text-1);
+  padding: 10px;
+  font: 14px/1.5 var(--font-body);
+  resize: vertical;
 }

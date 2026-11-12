@@ -37,7 +37,7 @@ async function draftAll() {
     }
     await card.click();
   }
-  await page.waitForURL(/#\/escalacao/, { timeout: 8000 });
+  await page.waitForURL(/#escalacao/, { timeout: 8000 });
 }
 
 async function toSeason() {
@@ -45,17 +45,17 @@ async function toSeason() {
   await page.locator('.captain-grid button.pcard').first().click();
   await page.getByRole('button', { name: /pré-temporada/i }).click();
   await page.getByRole('button', { name: /Iniciar temporada/i }).click();
-  await page.waitForURL(/#\/campeonato/);
+  await page.waitForURL(/#campeonato/);
 }
 
 async function simulateAll() {
   await page.getByRole('button', { name: /Simular até o fim/i }).click();
   await page.getByRole('dialog').getByRole('button', { name: /^Simular$/ }).click();
-  await page.waitForURL(/#\/resultado/);
+  await page.waitForURL(/#resultado/);
 }
 
 async function startFromHome(modeTitle) {
-  await page.goto(BASE + '#/');
+  await page.goto(BASE + '#inicio');
   await page.waitForSelector('.mode-card');
   const card = page.locator('.mode-card', { hasText: modeTitle });
   await card.getByRole('button', { name: /Jogar/ }).click();
@@ -66,7 +66,7 @@ async function startFromHome(modeTitle) {
 // 1) Mistura Brasileira
 log('Mistura');
 await startFromHome('Mistura Brasileira');
-await page.waitForURL(/#\/formacao/);
+await page.waitForURL(/#formacao/);
 await page.locator('.formation-card', { hasText: '4-4-2' }).click();
 await page.getByRole('button', { name: /Iniciar draft/i }).click();
 await page.waitForSelector('.roulette.is-done');
@@ -81,12 +81,12 @@ await shot('mistura-resultado');
 // 2) Desafio Diário (uma tentativa)
 log('Diário');
 await startFromHome('Desafio Diário');
-await page.waitForURL(/#\/draft/);
+await page.waitForURL(/#draft/);
 await shot('diario-draft');
 await draftAll();
 await toSeason();
 await simulateAll();
-await page.goto(BASE + '#/');
+await page.goto(BASE + '#inicio');
 await page.waitForSelector('.mode-card');
 const dailyBtn = page.locator('.mode-card', { hasText: 'Desafio Diário' }).getByRole('button');
 if (!(await dailyBtn.isDisabled())) errors.push('Diário: deveria bloquear segunda tentativa no mesmo dia');
@@ -94,13 +94,13 @@ await shot('diario-bloqueado');
 
 // 3) Era Única (Flamengo anos 80)
 log('Era Única');
-await page.goto(BASE + '#/');
+await page.goto(BASE + '#inicio');
 await page.getByRole('button', { name: /Jogar agora|Novo jogo/ }).first().click();
 const dlg3 = page.getByRole('dialog');
 if (await dlg3.count()) await dlg3.getByRole('button', { name: /Começar/ }).click();
 await page.locator('.club-tile', { hasText: 'Flamengo' }).click();
 await page.locator('.decade-card', { hasText: 'Anos 80' }).click();
-await page.waitForURL(/#\/formacao/);
+await page.waitForURL(/#formacao/);
 await page.locator('.formation-card:not([disabled])').first().click();
 await page.getByRole('button', { name: /Iniciar draft/i }).click();
 await page.waitForSelector('.roulette.is-done');
@@ -116,7 +116,7 @@ await simulateAll();
 // 4) Tríplice Coroa (Cruzeiro) — joga uma partida do estadual na tela de partida
 log('Tríplice Coroa');
 await startFromHome('Tríplice Coroa');
-await page.waitForURL(/#\/clubes/);
+await page.waitForURL(/#clubes/);
 await page.locator('.club-tile', { hasText: 'Cruzeiro' }).click();
 await page.getByRole('button', { name: /Sortear décadas/i }).click();
 await page.locator('.formation-card', { hasText: '4-2-3-1' }).click();
@@ -130,7 +130,7 @@ await page.getByRole('button', { name: /Jogar partida/i }).click();
 await page.getByRole('button', { name: /Pular para o final/i }).click();
 await page.waitForSelector('.fulltime');
 await page.getByRole('button', { name: /Continuar →/i }).click();
-await page.waitForURL(/#\/campeonato/);
+await page.waitForURL(/#campeonato/);
 await page.getByRole('tab', { name: /Mineiro/ }).click();
 await shot('triplice-estadual');
 await simulateAll();
@@ -139,7 +139,7 @@ const ach = await page.locator('.achievements li').allTextContents();
 if (!ach.some((a) => /Tríplice Coroa/.test(a))) errors.push('Tríplice: conquista Tríplice Coroa não listada');
 await shot('triplice-resultado');
 
-await page.goto(BASE + '#/ranking');
+await page.goto(BASE + '#ranking');
 const n = await page.locator('table.data tbody tr').count();
 if (n < 4) errors.push(`Ranking: esperava ao menos 4 campanhas, veio ${n}`);
 await shot('ranking');
