@@ -281,6 +281,37 @@ export function positionsWithOffers(state: DraftState): Position[] {
   return openPositions(state).filter((p) => (state.draw!.offers[p]?.length ?? 0) > 0);
 }
 
+export interface OfferEntry {
+  key: string;
+  /** Categoria em que o jogador entra se escolhido pela lista geral. */
+  pos: Position;
+  /** Outras categorias em que ele também foi oferecido. */
+  also: Position[];
+}
+
+/**
+ * Todas as ofertas do sorteio numa lista só (aba "Todos"): cada jogador uma
+ * vez, do maior overall para o menor. Quem foi oferecido em mais de uma
+ * categoria entra pela categoria principal dele, se ela estiver entre as ofertadas.
+ */
+export function allOffers(db: Database, state: DraftState): OfferEntry[] {
+  const draw = state.draw;
+  if (!draw) return [];
+  const offered = new Map<string, Position[]>();
+  for (const pos of positionsWithOffers(state)) for (const key of draw.offers[pos]!) offered.set(key, [...(offered.get(key) ?? []), pos]);
+  return [...offered.entries()]
+    .map(([key, cats]) => {
+      const main = db.card(key).positions[0];
+      const pos = cats.includes(main) ? main : cats[0];
+      return { key, pos, also: cats.filter((p) => p !== pos) };
+    })
+    .sort((a, b) => {
+      const ca = db.card(a.key);
+      const cb = db.card(b.key);
+      return cb.overall - ca.overall || ca.player.name.localeCompare(cb.player.name, 'pt-BR');
+    });
+}
+
 /** Vagas livres cuja categoria tem oferta no sorteio atual. */
 export function slotsWithOffers(state: DraftState): Slot[] {
   const pos = new Set(positionsWithOffers(state));

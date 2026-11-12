@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CLUB_BY_ID, CLUBS } from '../data/clubs';
 import { db } from '../data/db';
-import { decadeLabel, POSITION_NAMES, POSITION_PLURAL, type Card, type Position } from '../data/types';
+import { decadeLabel, POSITION_NAMES, POSITION_PLURAL, type Position } from '../data/types';
 import { getFormation, type Slot } from '../data/formations';
-import { firstOpenSlot, isDraftComplete, openSlots, positionsWithOffers } from '../engine/draft';
+import { allOffers, firstOpenSlot, isDraftComplete, openSlots, positionsWithOffers, type OfferEntry } from '../engine/draft';
 import { computeChemistry } from '../engine/chemistry';
 import { navigate } from '../router';
 import { lineupOf, MODE_INFO, useGame } from '../state/store';
@@ -11,6 +11,8 @@ import { Pitch } from '../components/Pitch';
 import { PlayerCard } from '../components/PlayerCard';
 import { Crest } from '../components/Crest';
 import { NeedRun, chemColor, useToast } from '../components/ui';
+
+type Tab = Position | 'TODOS';
 
 export function Draft() {
   const run = useGame((s) => s.run);
@@ -28,8 +30,8 @@ function DraftInner() {
   const draft = run.draft!;
   const formation = getFormation(draft.config.formationId);
   const [toast, showToast] = useToast();
-  // categoria escolhida nas abas e, opcionalmente, a vaga tocada no campo
-  const [activePos, setActivePos] = useState<Position | null>(null);
+  // aba escolhida ("Todos" ou uma categoria) e, opcionalmente, a vaga tocada no campo
+  const [activeTab, setActiveTab] = useState<Tab>('TODOS');
   const [activeSlot, setActiveSlot] = useState<string | null>(null);
   const [lastPicked, setLastPicked] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(true);
@@ -57,21 +59,27 @@ function DraftInner() {
   const chem = useMemo(() => computeChemistry(db, draft.config.formationId, lineup, null), [draft.picks]); // eslint-disable-line react-hooks/exhaustive-deps
   const avg = Object.values(lineup).length ? Math.round(Object.values(lineup).reduce((a, c) => a + c.overall, 0) / Object.values(lineup).length) : 0;
 
-  // categoria efetiva (síncrona): a escolhida, se tiver opções; senão a primeira com opções (GOL → ATA)
-  const activeCat: Position | null = activePos && offerPositions.includes(activePos) ? activePos : (offerPositions[0] ?? null);
+  // aba efetiva (síncrona): a categoria escolhida, se ainda tiver opções; senão "Todos"
+  const tab: Tab = activeTab !== 'TODOS' && offerPositions.includes(activeTab) ? activeTab : 'TODOS';
+  const activeCat: Position | null = tab === 'TODOS' ? null : tab;
+  const everyone = allOffers(db, draft);
+  const offers: OfferEntry[] =
+    activeCat && draw ? (draw.offers[activeCat] ?? []).map((key) => ({ key, pos: activeCat, also: [] })) : everyone;
   // vaga de destino: a tocada no campo (se livre e da categoria); senão a primeira livre da categoria
-  const tapped = formation.slots.find((s) => s.id === activeSlot && s.pos === activeCat && !draft.picks[s.id]);
-  const target: Slot | null = tapped ?? (activeCat ? firstOpenSlot(draft, activeCat) : null);
+  const targetFor = (pos: Position): Slot | null =>
+    formation.slots.find((s) => s.id === activeSlot && s.pos === pos && !draft.picks[s.id]) ?? firstOpenSlot(draft, pos);
+  const target = activeCat ? targetFor(activeCat) : null;
   const openInCat = activeCat ? openSlots(draft).filter((s) => s.pos === activeCat).length : 0;
-  const offers: Card[] = activeCat && draw ? (draw.offers[activeCat] ?? []).map((k) => db.card(k)) : [];
 
-  const doPick = (card: Card) => {
-    if (!target) return;
+  const doPick = (offer: OfferEntry) => {
+    const card = db.card(offer.key);
+    const slot = targetFor(offer.pos);
+    if (!slot) return;
     try {
-      pickCard(card.key, target.id);
-      setLastPicked(target.id);
-      showToast(`${card.player.name} escalado como ${POSITION_NAMES[target.pos].toLowerCase()}!`);
-      setActivePos(null);
+      pickCard(card.key, slot.id);
+      setLastPicked(slot.id);
+      showToast(`${card.player.name} escalado como ${POSITION_NAMES[slot.pos].toLowerCase()}!`);
+      setActiveTab('TODOS');
       setActiveSlot(null);
       // no celular, volta para o painel do sorteio
       if (window.innerWidth < 900) {
@@ -139,7 +147,7 @@ function DraftInner() {
                   className={`slot-empty ${has ? 'has-offer' : ''} ${target?.id === s.id ? 'is-active' : ''}`}
                   onClick={() => {
                     if (!has) return;
-                    setActivePos(s.pos);
+                    setActiveTab(s.pos);
                     setActiveSlot(s.id);
                   }}
                   disabled={!has}
@@ -185,7 +193,7 @@ function DraftInner() {
                       </strong>
                       <div className="dim">
                         {offerPositions.length} {offerPositions.length === 1 ? 'categoria' : 'categorias'} com opções ·{' '}
-                        {offerPositions.reduce((a, p) => a + (draw.offers[p]?.length ?? 0), 0)} jogadores elegíveis
+                        {everyone.length} jogadores elegíveis
                       </div>
                     </div>
                   </div>
@@ -199,26 +207,41 @@ function DraftInner() {
                 <div className="row wrap" style={{ justifyContent: 'space-between', gap: 8 }}>
                   <div>
                     <div className="eyebrow" style={{ margin: 0 }}>
-                      Categoria disponível
+                      {activeCat ? 'Categoria disponível' : 'Jogadores sorteados'}
                     </div>
-                    <h2 style={{ fontSize: 26 }}>{activeCat ? `${POSITION_PLURAL[activeCat]} (${activeCat})` : '—'}</h2>
-                    {activeCat && (
-                      <div className="dim" style={{ fontSize: 13 }}>
-                        {openInCat} {openInCat === 1 ? 'vaga livre' : 'vagas livres'} · o escolhido entra na vaga destacada no campo
-                      </div>
-                    )}
+                    <h2 style={{ fontSize: 26 }}>{activeCat ? `${POSITION_PLURAL[activeCat]} (${activeCat})` : 'Todos os jogadores'}</h2>
+                    <div className="dim" style={{ fontSize: 13 }}>
+                      {activeCat
+                        ? `${openInCat} ${openInCat === 1 ? 'vaga livre' : 'vagas livres'} · o escolhido entra na vaga destacada no campo`
+                        : 'Do maior para o menor overall · cada um entra numa vaga livre da sua categoria'}
+                    </div>
                   </div>
                 </div>
-                <div className="tabs" style={{ margin: '8px 0 12px' }} role="tablist" aria-label="Categorias com opções">
+                <div className="tabs" style={{ margin: '8px 0 12px' }} role="tablist" aria-label="Jogadores por categoria">
+                  {everyone.length > 0 && (
+                    <button
+                      role="tab"
+                      className="tab"
+                      aria-selected={tab === 'TODOS'}
+                      title="Todos os jogadores sorteados"
+                      onClick={() => {
+                        setActiveTab('TODOS');
+                        setActiveSlot(null);
+                      }}
+                    >
+                      TODOS
+                      <span className="dim"> {everyone.length}</span>
+                    </button>
+                  )}
                   {offerPositions.map((p) => (
                     <button
                       key={p}
                       role="tab"
                       className="tab"
-                      aria-selected={activeCat === p}
+                      aria-selected={tab === p}
                       title={POSITION_PLURAL[p]}
                       onClick={() => {
-                        setActivePos(p);
+                        setActiveTab(p);
                         setActiveSlot(null);
                       }}
                     >
@@ -231,8 +254,16 @@ function DraftInner() {
                   <div className="offers-loading">Sorteando…</div>
                 ) : offers.length ? (
                   <div className="offers">
-                    {offers.map((c, i) => (
-                      <PlayerCard key={c.key} card={c} pos={activeCat!} onClick={() => doPick(c)} delay={i * 70} showClub={run.mode === 'mistura'} />
+                    {offers.map((o, i) => (
+                      <PlayerCard
+                        key={o.key}
+                        card={db.card(o.key)}
+                        pos={o.pos}
+                        note={o.also.length ? `também ${o.also.join('/')}` : undefined}
+                        onClick={() => doPick(o)}
+                        delay={Math.min(i, 12) * 50}
+                        showClub={run.mode === 'mistura'}
+                      />
                     ))}
                   </div>
                 ) : (

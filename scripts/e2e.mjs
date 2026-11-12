@@ -27,7 +27,7 @@ async function run(label, contextOpts) {
     const texts = [
       ...(await page.locator('.pcard-pos').allTextContents()),
       ...(await page.locator('.slot-empty').allTextContents()),
-      ...(await page.locator('.offers-panel [role=tab]').allTextContents()).map((t) => t.trim().split(/\s+/)[0]),
+      ...(await page.locator('.offers-panel [role=tab]').allTextContents()).map((t) => t.trim().split(/\s+/)[0]).filter((t) => t !== 'TODOS'),
     ];
     const bad = texts.map((t) => t.trim()).filter((t) => !CATS.includes(t));
     if (bad.length) errors.push(`${where}: posições fora das 4 categorias: ${[...new Set(bad)].join(', ')}`);
@@ -80,6 +80,13 @@ async function run(label, contextOpts) {
     const card = page.locator('.offers button.pcard').first();
     await card.waitFor({ timeout: 8000 });
     await checkCategories(`draft r${round + 1}`);
+    if (round === 0) {
+      // aba "Todos" aberta por padrão, com os overalls em ordem decrescente
+      const sel = await page.locator('.offers-panel [role=tab][aria-selected=true]').textContent();
+      if (!/^TODOS/.test(sel.trim())) errors.push(`aba padrão do draft deveria ser TODOS, veio "${sel}"`);
+      const ovrs = (await page.locator('.offers .pcard-ovr-num').allTextContents()).map(Number);
+      if (ovrs.some((v, i) => i > 0 && v > ovrs[i - 1])) errors.push(`aba TODOS fora de ordem: ${ovrs.join(',')}`);
+    }
     await card.click();
     await page.waitForTimeout(150);
     if (target) {

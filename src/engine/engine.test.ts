@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { db, LEAGUE_CLUBS } from '../data/db';
 import { CLUBS } from '../data/clubs';
 import { FORMATIONS, getFormation, type FormationId } from '../data/formations';
-import { createDraft, isDraftComplete, openSlots, pick, reroll, slotsWithOffers, checkPick, feasibleFormationsForClub, type DraftState, type GameMode } from './draft';
+import { allOffers, createDraft, firstOpenSlot, isDraftComplete, openSlots, pick, reroll, slotsWithOffers, checkPick, feasibleFormationsForClub, type DraftState, type GameMode } from './draft';
 import { canPlay, positionsOf } from './database';
 import { formationCounts } from '../data/formations';
 import { computeChemistry } from './chemistry';
@@ -129,6 +129,21 @@ describe('draft', () => {
       }
     }
     expect(checked).toBeGreaterThan(0);
+  });
+
+  it('aba "Todos": cada jogador uma vez, do maior overall ao menor, entrando numa vaga da sua categoria', () => {
+    for (let seed = 1; seed <= 10; seed++) {
+      const st = createDraft(db, { mode: 'classico', clubId: 'palmeiras', decade: null, formationId: '4-2-3-1', seed, rerolls: 5 });
+      const list = allOffers(db, st);
+      const total = new Set(Object.values(st.draw!.offers).flat()).size;
+      expect(list.length).toBe(total);
+      expect(new Set(list.map((o) => o.key)).size).toBe(list.length);
+      for (let i = 1; i < list.length; i++) expect(db.card(list[i - 1].key).overall).toBeGreaterThanOrEqual(db.card(list[i].key).overall);
+      for (const o of list) {
+        expect(st.draw!.offers[o.pos]).toContain(o.key);
+        expect(checkPick(db, st, o.key, firstOpenSlot(st, o.pos)!.id).ok).toBe(true);
+      }
+    }
   });
 
   it('qualquer jogador da categoria pode ocupar qualquer vaga daquela categoria', () => {

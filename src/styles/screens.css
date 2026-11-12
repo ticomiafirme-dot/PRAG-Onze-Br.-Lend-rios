@@ -1678,3 +1678,13 @@
   letter-spacing: 0.04em;
   gap: 4px;
 }
+
+/* abas do draft: TODOS + 4 categorias cabem numa linha no celular */
+@media (max-width: 480px) {
+  .offers-panel .tabs {
+    gap: 4px;
+  }
+  .offers-panel .tab {
+    padding: 7px 10px;
+  }
+}
