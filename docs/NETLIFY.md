@@ -8,8 +8,11 @@ O jogo é um site estático: o build gera a pasta `dist/` (HTML, JS, CSS, fontes
 | Pasta publicada | `dist` |
 | Versão do Node | 22 (o Vite 7 exige 20.19 ou mais novo) |
 | Cache | arquivos de `/assets/` em cache longo (o nome muda a cada versão) |
+| Endereços inexistentes | voltam para a página inicial, em vez de dar erro 404 |
 
-As rotas do jogo usam `#` (`/#clubes`, `/#perfil`...), então não é preciso configurar redirecionamentos.
+As telas do jogo usam `#` (`/#clubes`, `/#perfil`...), então o site tem uma única página. O arquivo `.nvmrc` fixa o Node 22 também para quem roda o projeto no computador, e o `index.html` traz título e descrição para a prévia do link no WhatsApp e nas redes sociais.
+
+**Nada precisa ser preenchido à mão no Netlify para o jogo ir ao ar.**
 
 ## 1. Criar o site
 

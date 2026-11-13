@@ -8,6 +8,16 @@
 [build.environment]
   # O Vite 7 exige Node 20.19 ou mais novo.
   NODE_VERSION = "22"
+  # Instala também as dependências de desenvolvimento (TypeScript e Vite são usados no build).
+  NPM_FLAGS = "--include=dev"
+
+# As telas do jogo usam "#" (ex.: /#clubes), então o site só tem a página "/".
+# Qualquer outro endereço digitado volta para o início, em vez de dar erro 404.
+# Arquivos que existem (index.html, /assets/...) são servidos normalmente.
+[[redirects]]
+  from = "/*"
+  to = "/"
+  status = 302
 
 # Arquivos gerados com hash no nome (JS, CSS, fontes, imagens): podem ficar em
 # cache no navegador por muito tempo, porque cada versão nova tem outro nome.
