@@ -187,6 +187,28 @@ describe('títulos especiais (PRESIDENTE)', () => {
   });
 });
 
+describe('ranking global', () => {
+  it('todos veem as temporadas finalizadas (nick, avatar, tag e números), sem e-mail', async () => {
+    await insertSeason(A, season(A, 'rk-a1', { status: 'finished', finished_at: '2026-11-02T12:00:00Z', points: 112, wins: 37, draws: 1, losses: 0, goals_for: 140, goals_against: 9, position: 1, champion: true, entry: JSON.stringify({ runId: 'rk-a1', challengeLabel: null }) }));
+    await insertSeason(B, season(B, 'rk-b1', { status: 'finished', finished_at: '2026-11-03T12:00:00Z', points: 80, wins: 24, position: 3, entry: JSON.stringify({ runId: 'rk-b1' }) }));
+    await insertSeason(B, season(B, 'rk-b2', { points: 99 })); // em andamento: não entra
+
+    const visitante = await as(null, 'select * from public.ranking_global(50)');
+    const runs = visitante.rows.map((r) => (r as { run_id: string }).run_id);
+    expect(runs.indexOf('rk-a1')).toBeLessThan(runs.indexOf('rk-b1'));
+    expect(runs).not.toContain('rk-b2');
+    const linha = visitante.rows.find((r) => (r as { run_id: string }).run_id === 'rk-a1') as Record<string, unknown>;
+    expect(linha.display_name).toBe('Jogador A');
+    expect(linha.is_me).toBe(false);
+    expect(Object.keys(linha)).not.toContain('email');
+
+    const dono = await as(A, 'select run_id, is_me from public.ranking_global(50)');
+    expect(dono.rows.find((r) => (r as { run_id: string }).run_id === 'rk-a1')).toEqual({ run_id: 'rk-a1', is_me: true });
+    // a tabela de temporadas continua fechada: cada um só lê as próprias
+    expect((await as(B, `select run_id from public.seasons where run_id = 'rk-a1'`)).rows).toEqual([]);
+  });
+});
+
 describe('instalação em um passo', () => {
   it('supabase/instalar.sql traz todas as migrações, na ordem', () => {
     const all = fs.readFileSync('supabase/instalar.sql', 'utf8');

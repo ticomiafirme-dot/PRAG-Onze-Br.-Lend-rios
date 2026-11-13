@@ -38,8 +38,9 @@ export function GoogleButton({ label = 'Entrar com Google', block = false }: { l
 }
 
 /** Tag especial do jogador (ex.: PRESIDENTE, do fundador do jogo). */
-export function StaffBadge({ small = false }: { small?: boolean }) {
-  const title = useAuth((s) => (s.status === 'signed-in' ? (s.user?.title ?? null) : null));
+export function StaffBadge({ small = false, title: forced }: { small?: boolean; title?: string | null }) {
+  const mine = useAuth((s) => (s.status === 'signed-in' ? (s.user?.title ?? null) : null));
+  const title = forced === undefined ? mine : forced;
   if (!title) return null;
   const tip = title.toLowerCase() === 'presidente' ? 'Fundador e presidente do Onze BR Lendário' : title;
   return (

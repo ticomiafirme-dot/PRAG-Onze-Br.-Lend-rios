@@ -9,9 +9,12 @@ import { BackLink } from '../components/ui';
 import { useAuth } from '../cloud/auth';
 import { StaffBadge, UserAvatar } from '../components/Account';
 import { PlayerFaceByKey } from '../components/PlayerFace';
+import { cloudEnabled } from '../cloud/config';
+import { loadGlobalRanking, type GlobalEntry } from '../cloud/globalRanking';
+import { isOwnerAvatar, ownerAvatarUrl } from '../avatars/owner';
 
 type Filter = 'geral' | 'diario' | 'semanal' | 'classico' | 'era' | 'mistura' | 'triplice';
-type Scope = 'shared' | 'local';
+type Scope = 'shared' | 'local' | 'global';
 type Status = 'idle' | 'loading' | 'live' | 'stale' | 'offline';
 
 const FILTERS: [Filter, string][] = [
@@ -30,6 +33,8 @@ export function Ranking() {
   const [sharedOn, setSharedOn] = useState(false);
   const [shared, setShared] = useState<SharedEntry[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
+  const [global, setGlobal] = useState<GlobalEntry[]>([]);
+  const [globalStatus, setGlobalStatus] = useState<'loading' | 'live' | 'offline'>('loading');
   const me = useAuth((s) => (s.status === 'signed-in' ? s.user : null));
   /** Nome exibido numa campanha deste aparelho: o nick atual da conta, quando é de quem está conectado. */
   const isMine = (e: RankingEntry): boolean => !!me && (e.accountId === me.id || (!e.accountId && (!e.playerName || e.playerName === 'Anônimo')));
@@ -78,7 +83,25 @@ export function Ranking() {
 
   const today = `diario:${brazilDateKey()}`;
   const week = `semanal:${brazilWeekKey()}`;
-  const source: (RankingEntry & { uid?: string })[] = scope === 'shared' ? shared : local;
+
+  // ranking global (conta com Supabase): o mesmo para todos os jogadores
+  useEffect(() => {
+    if (!cloudEnabled) return;
+    let alive = true;
+    setScope('global');
+    void loadGlobalRanking({ today, week, dateKey: brazilDateKey(), weekKey: brazilWeekKey() }).then((list) => {
+      if (!alive) return;
+      if (list) {
+        setGlobal(list);
+        setGlobalStatus('live');
+      } else setGlobalStatus('offline');
+    });
+    return () => {
+      alive = false;
+    };
+  }, [today, week]);
+
+  const source: (RankingEntry & { uid?: string; who?: string; title?: string | null; isMe?: boolean })[] = scope === 'global' ? global : scope === 'shared' ? shared : local;
   const list = source.filter((e) => {
     if (filter === 'geral') return true;
     if (filter === 'diario') return e.challengeKey === today;
@@ -97,7 +120,23 @@ export function Ranking() {
         <BackLink to="/" />
       </div>
 
-      {sharedOn && (
+      {cloudEnabled && (
+        <div className="row wrap" style={{ marginBottom: 10 }}>
+          <div className="tabs" role="tablist" aria-label="Quais campanhas">
+            <button className="tab" role="tab" aria-selected={scope === 'global'} onClick={() => setScope('global')}>
+              Todos os jogadores
+            </button>
+            <button className="tab" role="tab" aria-selected={scope === 'local'} onClick={() => setScope('local')}>
+              Neste aparelho
+            </button>
+          </div>
+          {scope === 'global' && globalStatus !== 'live' && (
+            <span className="chip">{globalStatus === 'loading' ? 'Carregando…' : 'Ranking de todos indisponível agora'}</span>
+          )}
+        </div>
+      )}
+      {cloudEnabled && scope === 'global' && <p className="dim" style={{ marginBottom: 10, fontSize: 13 }}>Temporadas finalizadas de todos os jogadores com conta. Entre com Google para aparecer aqui.</p>}
+      {!cloudEnabled && sharedOn && (
         <div className="row wrap" style={{ marginBottom: 10 }}>
           <div className="tabs" role="tablist" aria-label="Quais campanhas">
             <button className="tab" role="tab" aria-selected={scope === 'shared'} onClick={() => setScope('shared')}>
@@ -114,7 +153,7 @@ export function Ranking() {
           )}
         </div>
       )}
-      {!sharedOn && <p className="dim" style={{ marginBottom: 10, fontSize: 13 }}>Ranking salvo neste dispositivo.</p>}
+      {(scope === 'local' || (!sharedOn && !cloudEnabled)) && <p className="dim" style={{ marginBottom: 10, fontSize: 13 }}>Ranking salvo neste dispositivo.</p>}
 
       <div className="tabs" style={{ marginBottom: 14 }}>
         {FILTERS.map(([id, label]) => (
@@ -125,7 +164,7 @@ export function Ranking() {
       </div>
       {list.length === 0 ? (
         <div className="empty panel">
-          {scope === 'shared' && status === 'loading'
+          {(scope === 'shared' && status === 'loading') || (scope === 'global' && globalStatus === 'loading')
             ? 'Carregando o ranking de todos os jogadores…'
             : `Nenhuma campanha registrada ${filter === 'geral' ? 'ainda' : 'nesta categoria'}. Termine uma temporada para entrar no ranking.`}
         </div>
@@ -148,7 +187,14 @@ export function Ranking() {
             </thead>
             <tbody>
               {list.slice(0, 200).map((e, i) => (
-                <Row key={`${e.uid ?? 'local'}-${e.id}`} e={e} i={i} who={e.uid ? (names[e.uid] ?? 'Jogador') : localName(e)} mine={!e.uid && isMine(e)} />
+                <Row
+                  key={`${scope}-${e.uid ?? ''}-${e.id}`}
+                  e={e}
+                  i={i}
+                  who={scope === 'global' ? (e.who ?? 'Jogador') : e.uid ? (names[e.uid] ?? 'Jogador') : localName(e)}
+                  mine={scope === 'global' ? !!e.isMe : !e.uid && isMine(e)}
+                  title={scope === 'global' ? (e.title ?? null) : undefined}
+                />
               ))}
             </tbody>
           </table>
@@ -158,17 +204,23 @@ export function Ranking() {
   );
 }
 
-function Row({ e, i, who, mine }: { e: RankingEntry; i: number; who: string; mine: boolean }) {
+function Row({ e, i, who, mine, title }: { e: RankingEntry; i: number; who: string; mine: boolean; title?: string | null }) {
   const club = e.clubId ? CLUB_BY_ID[e.clubId] : null;
   return (
     <tr>
       <td className="stat-num">{i + 1}</td>
       <td className="l">
         <span className="rank-who">
-          {mine ? <UserAvatar size={34} /> : <PlayerFaceByKey cardKey={e.avatar} size={34} />}
+          {mine ? (
+            <UserAvatar size={34} />
+          ) : title && isOwnerAvatar(e.avatar) ? (
+            <img className="pavatar" src={ownerAvatarUrl()} width={34} height={34} alt="" />
+          ) : (
+            <PlayerFaceByKey cardKey={e.avatar} size={34} />
+          )}
           <span className="rank-who-name">
             <strong>{who}</strong>
-            {mine && <StaffBadge small />}
+            {mine ? <StaffBadge small /> : title ? <StaffBadge small title={title} /> : null}
           </span>
         </span>
       </td>
