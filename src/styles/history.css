@@ -1808,3 +1808,70 @@ tr.is-user td {
   align-items: flex-start;
   gap: 2px;
 }
+
+/* ranking: linhas que abrem a campanha */
+table.data tr.is-link {
+  cursor: pointer;
+}
+
+table.data tr.is-link:hover td,
+table.data tr.is-link:focus-visible td {
+  background: rgba(255, 210, 58, 0.07);
+}
+
+table.data tr.is-link:focus-visible {
+  outline: 2px solid #ffd23a;
+  outline-offset: -2px;
+}
+
+/* campanha pública: perfil do jogador */
+.public-player {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.public-player h2 {
+  font-size: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.public-player-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(72px, 1fr));
+  gap: 8px;
+  text-align: center;
+}
+
+.public-player-stats div {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+}
+
+.public-player-stats b {
+  font-family: var(--font-display);
+  font-size: 26px;
+}
+
+.public-player-stats span {
+  font-size: 11px;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 640px) {
+  .public-player-stats {
+    grid-template-columns: repeat(2, 1fr);
+    width: 100%;
+  }
+}

@@ -207,6 +207,19 @@ describe('ranking global', () => {
     // a tabela de temporadas continua fechada: cada um só lê as próprias
     expect((await as(B, `select run_id from public.seasons where run_id = 'rk-a1'`)).rows).toEqual([]);
   });
+
+  it('campanha pública: perfil e escalação de uma temporada do ranking, sem e-mail', async () => {
+    const pub = async (user: string | null, run: string) => ((await as(user, 'select public.public_season($1) as j', [run])).rows[0] as { j: Record<string, unknown> | null }).j;
+    const j = (await pub(null, 'rk-a1'))!;
+    const player = j.player as Record<string, unknown>;
+    expect(player.name).toBe('Jogador A');
+    expect(player.isMe).toBe(false);
+    expect(Number(player.seasons)).toBeGreaterThanOrEqual(1);
+    expect(JSON.stringify(j)).not.toContain('a@exemplo.com');
+    expect(((await pub(A, 'rk-a1'))!.player as Record<string, unknown>).isMe).toBe(true);
+    // temporada em andamento não é pública
+    expect(await pub(null, 'rk-b2')).toBeNull();
+  });
 });
 
 describe('instalação em um passo', () => {

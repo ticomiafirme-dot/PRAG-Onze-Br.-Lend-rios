@@ -31,6 +31,7 @@ import { Final } from './screens/Final';
 import { Ranking } from './screens/Ranking';
 import { HowTo } from './screens/HowTo';
 import { Credits } from './screens/Credits';
+import { Campanha } from './screens/Campanha';
 
 let started = false;
 
@@ -105,6 +106,9 @@ export function App() {
       break;
     case '/temporada/:id':
       screen = <Temporada id={route.params.id} />;
+      break;
+    case '/campanha/:id':
+      screen = <Campanha id={route.params.id} />;
       break;
     case '/conquistas':
       screen = <Conquistas />;

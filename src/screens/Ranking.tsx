@@ -12,6 +12,8 @@ import { PlayerFaceByKey } from '../components/PlayerFace';
 import { cloudEnabled } from '../cloud/config';
 import { loadGlobalRanking, type GlobalEntry } from '../cloud/globalRanking';
 import { isOwnerAvatar, ownerAvatarUrl } from '../avatars/owner';
+import { navigate } from '../router';
+import { useHistory } from '../history/store';
 
 type Filter = 'geral' | 'diario' | 'semanal' | 'classico' | 'era' | 'mistura' | 'triplice';
 type Scope = 'shared' | 'local' | 'global';
@@ -34,6 +36,7 @@ export function Ranking() {
   const [shared, setShared] = useState<SharedEntry[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [global, setGlobal] = useState<GlobalEntry[]>([]);
+  const history = useHistory((h) => h.data.seasons);
   const [globalStatus, setGlobalStatus] = useState<'loading' | 'live' | 'offline'>('loading');
   const me = useAuth((s) => (s.status === 'signed-in' ? s.user : null));
   /** Nome exibido numa campanha deste aparelho: o nick atual da conta, quando é de quem está conectado. */
@@ -194,6 +197,7 @@ export function Ranking() {
                   who={scope === 'global' ? (e.who ?? 'Jogador') : e.uid ? (names[e.uid] ?? 'Jogador') : localName(e)}
                   mine={scope === 'global' ? !!e.isMe : !e.uid && isMine(e)}
                   title={scope === 'global' ? (e.title ?? null) : undefined}
+                  to={scope === 'global' ? `/campanha/${e.id}` : scope === 'local' && history.some((h) => h.runId === e.id) ? `/temporada/${e.id}` : null}
                 />
               ))}
             </tbody>
@@ -204,10 +208,19 @@ export function Ranking() {
   );
 }
 
-function Row({ e, i, who, mine, title }: { e: RankingEntry; i: number; who: string; mine: boolean; title?: string | null }) {
+function Row({ e, i, who, mine, title, to }: { e: RankingEntry; i: number; who: string; mine: boolean; title?: string | null; to: string | null }) {
   const club = e.clubId ? CLUB_BY_ID[e.clubId] : null;
+  const open = to ? () => navigate(to) : undefined;
   return (
-    <tr>
+    <tr
+      className={to ? 'is-link' : undefined}
+      onClick={open}
+      onKeyDown={to ? (ev) => (ev.key === 'Enter' || ev.key === ' ') && (ev.preventDefault(), open!()) : undefined}
+      tabIndex={to ? 0 : undefined}
+      role={to ? 'link' : undefined}
+      aria-label={to ? `Ver a campanha de ${who}: ${e.teamName}, ${e.points} pontos` : undefined}
+      title={to ? 'Ver perfil e escalação' : undefined}
+    >
       <td className="stat-num">{i + 1}</td>
       <td className="l">
         <span className="rank-who">
