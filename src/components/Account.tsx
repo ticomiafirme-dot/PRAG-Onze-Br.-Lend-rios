@@ -35,9 +35,25 @@ export function GoogleButton({ label = 'Entrar com Google', block = false }: { l
   );
 }
 
+/** Aviso de falha no login, visível em qualquer tela até ser fechado. */
+export function AuthErrorBar() {
+  const { status, error, set } = useAuth();
+  if (!error || status === 'signed-in') return null;
+  return (
+    <div className="auth-error-bar" role="alert">
+      <span>
+        <strong>Não foi possível entrar.</strong> {error}
+      </span>
+      <button className="btn btn-ghost btn-sm" onClick={() => set({ error: null })}>
+        Fechar
+      </button>
+    </div>
+  );
+}
+
 /** Aviso no topo das páginas da conta: visitante, sessão expirada ou erro de login. */
 export function AccountBanner() {
-  const { status, error } = useAuth();
+  const status = useAuth((st) => st.status);
   if (status === 'signed-in' || status === 'loading') return null;
   if (status === 'expired')
     return (
@@ -49,13 +65,8 @@ export function AccountBanner() {
       </div>
     );
   return (
-    <div className={`account-banner ${error ? 'is-error' : ''}`} role="status">
+    <div className="account-banner" role="status">
       <span>
-        {error ? (
-          <>
-            <strong>Não foi possível entrar com Google.</strong> {error}{' '}
-          </>
-        ) : null}
         {cloudEnabled ? (
           <>
             Você está como <strong>visitante</strong>: os dados ficam só neste aparelho. Entre com Google para salvar na nuvem e continuar em qualquer dispositivo.

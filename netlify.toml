@@ -14,8 +14,8 @@
   # para o navegador de qualquer forma); quem protege os dados são as regras
   # de segurança do banco. NUNCA coloque aqui a chave service_role.
   # Sem elas, o jogo funciona só como visitante e o botão "Entrar" não aparece.
-  # VITE_SUPABASE_URL = "https://SEU-PROJETO.supabase.co"
-  # VITE_SUPABASE_ANON_KEY = "SUA-CHAVE-ANON-OU-PUBLISHABLE"
+  VITE_SUPABASE_URL = "https://ejhautygiirevtgobyor.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "sb_publishable_m-ABaKlyGsWa_NQ88wE03A_or8t07si"
 
 # As telas do jogo usam "#" (ex.: /#clubes), então o site só tem a página "/".
 # Qualquer outro endereço digitado volta para o início, em vez de dar erro 404.

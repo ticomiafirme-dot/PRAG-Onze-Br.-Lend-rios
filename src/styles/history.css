@@ -1663,3 +1663,27 @@ tr.is-user td {
     animation: none;
   }
 }
+
+/* aviso de falha no login (qualquer tela) */
+.auth-error-bar {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 90;
+  width: min(640px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #3b0d14;
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  color: #fde2e2;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  font-size: 14px;
+}
+
+.auth-error-bar span {
+  flex: 1;
+}

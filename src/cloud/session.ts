@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import { navigate } from '../router';
 import { useGame } from '../state/store';
 import { useAuth, type AccountUser } from './auth';
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config';
 import { createRepo } from './repo';
 import { getSupabase } from './supabase';
 import { endSyncForLogout, flushSync, startSync, stopSync, syncHasPending, watchWhileExpired } from './sync';
@@ -97,10 +98,29 @@ export async function initSession(): Promise<void> {
   }
 }
 
+/**
+ * O provedor Google está ativo no Supabase? false só quando o servidor diz que
+ * não; null quando não deu para saber (aí o login segue normalmente).
+ */
+async function googleEnabled(): Promise<boolean | null> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SUPABASE_ANON_KEY } });
+    if (!r.ok) return null;
+    const j = (await r.json()) as { external?: { google?: boolean } };
+    return typeof j.external?.google === 'boolean' ? j.external.google : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function signInWithGoogle(): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
   useAuth.getState().set({ error: null });
+  if ((await googleEnabled()) === false) {
+    useAuth.getState().set({ error: 'O login com Google ainda está sendo configurado. Por enquanto, jogue como visitante: seu progresso fica salvo neste aparelho.' });
+    return;
+  }
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {

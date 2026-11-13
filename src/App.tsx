@@ -7,6 +7,7 @@ import { backfillRun } from './history/hooks';
 import { useGame } from './state/store';
 import { UnlockOverlay } from './components/UnlockOverlay';
 import { SyncConflictDialog } from './components/SyncConflictDialog';
+import { AuthErrorBar } from './components/Account';
 import { goPlay } from './components/MainMenu';
 import { Perfil } from './screens/Perfil';
 import { Historico } from './screens/Historico';
@@ -123,6 +124,7 @@ export function App() {
       <main key={route.path + (route.params.id ?? '')}>{screen}</main>
       <UnlockOverlay />
       <SyncConflictDialog />
+      <AuthErrorBar />
     </div>
   );
 }
