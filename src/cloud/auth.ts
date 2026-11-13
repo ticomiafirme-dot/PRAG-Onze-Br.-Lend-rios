@@ -9,7 +9,6 @@ export interface AccountUser {
   id: string;
   email: string | null;
   name: string;
-  avatarUrl: string | null;
   /** Avatar de jogador escolhido como foto de perfil (chave da carta: jogador@clube@década). */
   gameAvatar: string | null;
   /** Data de entrada no jogo (criação do perfil). */

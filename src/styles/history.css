@@ -1694,3 +1694,43 @@ tr.is-user td {
   text-decoration: underline;
   align-self: flex-start;
 }
+
+/* nome de exibição e convite para escolher o avatar */
+.name-form {
+  display: grid;
+  gap: 6px;
+}
+
+.name-hint {
+  font-size: 13px;
+  margin: 0;
+}
+
+.name-hint.is-ok {
+  color: #4ade80;
+}
+
+.name-hint.is-bad {
+  color: #fca5a5;
+}
+
+.name-hint.is-info {
+  color: var(--text-2);
+}
+
+.avatar-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+  border-color: rgba(255, 210, 58, 0.45);
+  background: linear-gradient(120deg, rgba(255, 210, 58, 0.12), rgba(10, 29, 71, 0.6));
+}
+
+.avatar-cta div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

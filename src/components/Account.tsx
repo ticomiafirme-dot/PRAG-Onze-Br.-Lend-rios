@@ -116,9 +116,9 @@ export function SyncIndicator() {
 export function UserAvatar({ size = 36 }: { size?: number }) {
   const user = useAuth((s) => s.user);
   const chosen = useProfileAvatar();
-  const [failed, setFailed] = useState(false);
   const card = db.cardMaybe(chosen);
   if (card) return <PlayerFace card={card} size={size} className="user-avatar-face" />;
+  // sem avatar escolhido: iniciais (a foto da conta Google não é usada)
   const initials = (user?.name ?? '?')
     .split(/\s+/)
     .filter(Boolean)
@@ -128,12 +128,11 @@ export function UserAvatar({ size = 36 }: { size?: number }) {
   return (
     <span className="user-avatar" style={{ width: size, height: size, fontSize: size * 0.4 }}>
       <span aria-hidden="true">{initials}</span>
-      {user?.avatarUrl && !failed && <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setFailed(true)} />}
     </span>
   );
 }
 
-/** Foto de perfil da conta ou do visitante (avatar de jogador escolhido, foto do Google ou iniciais). */
+/** Foto de perfil da conta ou do visitante (avatar de jogador escolhido ou iniciais). */
 export function ProfileAvatar({ size = 36 }: { size?: number }) {
   const status = useAuth((s) => s.status);
   const chosen = useProfileAvatar();

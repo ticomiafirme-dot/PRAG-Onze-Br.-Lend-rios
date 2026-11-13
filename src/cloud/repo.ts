@@ -4,6 +4,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { HistoryData } from '../history/engine';
 import type { SeasonDetails, SeasonEntry, TitleRecord, UnlockRecord } from '../history/types';
 
+/** O nome escolhido já é de outro jogador. */
+export class NameTakenError extends Error {
+  constructor() {
+    super('Esse nome já está em uso por outro jogador. Escolha outro.');
+    this.name = 'NameTakenError';
+  }
+}
+
 export interface CloudProfile {
   id: string;
   display_name: string;
@@ -82,18 +90,22 @@ export function createRepo(sb: SupabaseClient, uid: string) {
     },
 
     /** Garante o perfil (o gatilho do banco cria no primeiro login; isto cobre bancos sem o gatilho). */
-    async ensureProfile(p: { name: string; avatarUrl: string | null; email: string | null }): Promise<CloudProfile> {
+    async ensureProfile(p: { name: string; email: string | null }): Promise<CloudProfile> {
       const current = await this.profile();
-      if (!current) {
-        await sb.from('profiles').insert({ id: uid, display_name: p.name.slice(0, 60), avatar_url: p.avatarUrl, email: p.email });
-        return (await this.profile())!;
+      if (current) return current;
+      // bancos sem o gatilho de criação: cria aqui, com o primeiro nome livre
+      for (let i = 1; i <= 20; i++) {
+        const name = (i === 1 ? p.name : `${p.name.slice(0, 50)} ${i}`).slice(0, 60);
+        const { error } = await sb.from('profiles').insert({ id: uid, display_name: name, email: p.email });
+        if (!error || error.code !== '23505') break;
       }
-      // mantém a foto atualizada com a da conta Google
-      if (p.avatarUrl && p.avatarUrl !== current.avatar_url) {
-        await sb.from('profiles').update({ avatar_url: p.avatarUrl }).eq('id', uid);
-        return { ...current, avatar_url: p.avatarUrl };
-      }
-      return current;
+      return (await this.profile())!;
+    },
+
+    /** O nome está livre? null quando não deu para saber. */
+    async nameAvailable(name: string): Promise<boolean | null> {
+      const { data, error } = await sb.rpc('display_name_available', { wanted: name });
+      return error ? null : Boolean(data);
     },
 
     async setGameAvatar(key: string | null): Promise<void> {
@@ -101,7 +113,9 @@ export function createRepo(sb: SupabaseClient, uid: string) {
     },
 
     async setDisplayName(name: string): Promise<void> {
-      check(await sb.from('profiles').update({ display_name: name.slice(0, 60) }).eq('id', uid));
+      const { error } = await sb.from('profiles').update({ display_name: name.slice(0, 60) }).eq('id', uid);
+      if (error?.code === '23505') throw new NameTakenError();
+      if (error) throw new Error(error.message);
     },
 
     async history(): Promise<HistoryData> {

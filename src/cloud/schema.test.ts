@@ -67,9 +67,9 @@ beforeAll(async () => {
 }, 60_000);
 
 describe('esquema e segurança (RLS)', () => {
-  it('primeiro login cria o perfil com os dados da conta Google', async () => {
+  it('primeiro login cria o perfil com nome e e-mail da conta Google (sem a foto)', async () => {
     const r = await as(A, 'select display_name, avatar_url, email from public.profiles');
-    expect(r.rows).toEqual([{ display_name: 'Jogador A', avatar_url: 'https://exemplo.com/a.png', email: 'a@exemplo.com' }]);
+    expect(r.rows).toEqual([{ display_name: 'Jogador A', avatar_url: null, email: 'a@exemplo.com' }]);
     const rb = await as(B, 'select display_name from public.profiles');
     expect(rb.rows).toEqual([{ display_name: 'Jogador B' }]);
   });
@@ -135,6 +135,37 @@ describe('esquema e segurança (RLS)', () => {
     const stale = await as(A, `update public.game_saves set payload = 'velho' where user_id = $1 and revision = 2`, [A]);
     expect(stale.affectedRows).toBe(0);
     expect((await as(B, 'select payload from public.game_saves')).rows).toEqual([]);
+  });
+});
+
+describe('nome de exibição único', () => {
+  const C = '33333333-3333-4333-8333-333333333333';
+  const D = '44444444-4444-4444-8444-444444444444';
+
+  it('quem entra com um nome já usado ganha o próximo livre ("Nome 2")', async () => {
+    await db.query(
+      `insert into auth.users (id, email, raw_user_meta_data) values ($1, 'c@exemplo.com', '{"full_name":"jogador a"}'), ($2, 'd@exemplo.com', '{"full_name":"Jogádor  A"}')`,
+      [C, D],
+    );
+    expect((await as(C, 'select display_name from public.profiles')).rows).toEqual([{ display_name: 'jogador a 2' }]);
+    expect((await as(D, 'select display_name from public.profiles')).rows).toEqual([{ display_name: 'Jogádor A 3' }]);
+  });
+
+  it('não dá para trocar para um nome em uso, ignorando maiúsculas, acentos e espaços', async () => {
+    await expect(as(B, `update public.profiles set display_name = 'JOGADOR   Á' where id = $1`, [B])).rejects.toThrow(/profiles_display_name_unique/);
+    // trocar só maiúsculas do próprio nome é permitido
+    await as(B, `update public.profiles set display_name = 'jogador b' where id = $1`, [B]);
+    expect((await as(B, 'select display_name from public.profiles')).rows).toEqual([{ display_name: 'jogador b' }]);
+  });
+
+  it('o jogo consulta se o nome está livre, sem ver de quem é', async () => {
+    const free = async (user: string, n: string) => (await as(user, 'select public.display_name_available($1) as ok', [n])).rows[0];
+    expect(await free(B, 'Jogador A')).toEqual({ ok: false });
+    expect(await free(B, 'jogador b')).toEqual({ ok: true }); // o próprio nome conta como livre
+    expect(await free(B, 'Craque Novo')).toEqual({ ok: true });
+    expect(await free(B, '   ')).toEqual({ ok: false });
+    await expect(as(null, `select public.display_name_available('x')`)).rejects.toThrow(/permission denied/);
+    await expect(as(B, `select public.unique_display_name('x', null)`)).rejects.toThrow(/permission denied/);
   });
 });
 

@@ -21,13 +21,12 @@ function cleanAuthParams(): boolean {
   return true;
 }
 
-function userFrom(session: Session, profile?: { display_name: string; avatar_url: string | null; created_at: string; game_avatar?: string | null } | null): AccountUser {
+function userFrom(session: Session, profile?: { display_name: string; created_at: string; game_avatar?: string | null } | null): AccountUser {
   const m = (session.user.user_metadata ?? {}) as Record<string, string | undefined>;
   return {
     id: session.user.id,
     email: session.user.email ?? null,
     name: profile?.display_name || m.full_name || m.name || session.user.email?.split('@')[0] || 'Jogador',
-    avatarUrl: profile?.avatar_url ?? m.avatar_url ?? m.picture ?? null,
     gameAvatar: profile?.game_avatar ?? null,
     createdAt: profile?.created_at ?? session.user.created_at ?? null,
   };
@@ -60,7 +59,6 @@ async function onSession(session: Session | null, fromRedirect: boolean): Promis
     const m = (session.user.user_metadata ?? {}) as Record<string, string | undefined>;
     const profile = await repo.ensureProfile({
       name: m.full_name || m.name || session.user.email?.split('@')[0] || 'Jogador',
-      avatarUrl: m.avatar_url ?? m.picture ?? null,
       email: session.user.email ?? null,
     });
     auth.set({ user: userFrom(session, profile) });
@@ -166,11 +164,20 @@ export async function updateGameAvatar(key: string | null): Promise<void> {
   useAuth.getState().set({ user: { ...user, gameAvatar: key } });
 }
 
+/** Nome livre para usar no perfil? null quando não deu para saber. */
+export async function isNameAvailable(name: string): Promise<boolean | null> {
+  const sb = getSupabase();
+  const user = useAuth.getState().user;
+  if (!sb || !user) return null;
+  return createRepo(sb, user.id).nameAvailable(name);
+}
+
+/** Troca o nome de exibição (falha com NameTakenError se outro jogador já usa). */
 export async function updateDisplayName(name: string): Promise<void> {
   const sb = getSupabase();
   const user = useAuth.getState().user;
   if (!sb || !user) return;
-  const clean = name.trim().slice(0, 60);
+  const clean = name.trim().replace(/\s+/g, ' ').slice(0, 30);
   if (!clean) return;
   await createRepo(sb, user.id).setDisplayName(clean);
   useAuth.getState().set({ user: { ...user, name: clean } });

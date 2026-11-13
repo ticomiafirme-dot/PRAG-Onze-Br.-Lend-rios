@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../cloud/auth';
 import { cloudEnabled } from '../cloud/config';
-import { updateDisplayName } from '../cloud/session';
+import { isNameAvailable, updateDisplayName } from '../cloud/session';
+import { NameTakenError } from '../cloud/repo';
+import { useProfileAvatar } from '../cloud/profile';
 import { ACHIEVEMENT_DEFS } from '../history/achievements';
 import { careerStats } from '../history/records';
 import { useHistory } from '../history/store';
@@ -9,6 +11,32 @@ import { AccountBanner, GoogleButton, ProfileAvatar, SignOutButton, SyncIndicato
 import { AvatarPicker } from '../components/AvatarPicker';
 import { useToast } from '../components/ui';
 import { fmtDate, SeasonCard } from '../components/SeasonViews';
+
+const NAME_MIN = 3;
+const NAME_MAX = 30;
+
+type NameState = 'idle' | 'checking' | 'free' | 'taken' | 'invalid' | 'unknown';
+
+function cleanName(n: string): string {
+  return n.trim().replace(/\s+/g, ' ');
+}
+
+/** Mesma regra do banco: ignora maiúsculas, acentos e espaços repetidos. */
+function nameKey(n: string): string {
+  return cleanName(n).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+}
+
+function sameName(a: string, b: string): boolean {
+  return nameKey(a) === nameKey(b);
+}
+
+function nameProblem(n: string): string | null {
+  const c = cleanName(n);
+  if (c.length < NAME_MIN) return `Use pelo menos ${NAME_MIN} caracteres.`;
+  if (c.length > NAME_MAX) return `Use no máximo ${NAME_MAX} caracteres.`;
+  if (!/^[\p{L}\p{N} ._'-]+$/u.test(c)) return 'Use só letras, números, espaço, ponto, hífen ou apóstrofo.';
+  return null;
+}
 
 function Stat({ v, k }: { v: string | number; k: string }) {
   return (
@@ -28,6 +56,36 @@ export function Perfil() {
   const [saving, setSaving] = useState(false);
   const [picking, setPicking] = useState(false);
   const [toast, showToast] = useToast();
+  const chosenAvatar = useProfileAvatar();
+  const [nameState, setNameState] = useState<NameState>('idle');
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  // confere se o nome está livre enquanto o jogador digita
+  const currentName = user?.name ?? '';
+  useEffect(() => {
+    if (!editing) return;
+    setNameError(null);
+    const problem = nameProblem(name);
+    if (problem) {
+      setNameState('invalid');
+      return;
+    }
+    if (sameName(name, currentName)) {
+      setNameState('idle');
+      return;
+    }
+    setNameState('checking');
+    let alive = true;
+    const t = setTimeout(() => {
+      void isNameAvailable(cleanName(name)).then((ok) => {
+        if (alive) setNameState(ok === null ? 'unknown' : ok ? 'free' : 'taken');
+      });
+    }, 400);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [name, editing, currentName]);
 
   if (status === 'loading') {
     return (
@@ -68,14 +126,42 @@ export function Perfil() {
 
   const unlocked = data.unlocks.length;
   const save = async () => {
-    setSaving(true);
-    try {
-      await updateDisplayName(name);
+    const problem = nameProblem(name);
+    if (problem) {
+      setNameError(problem);
+      return;
+    }
+    if (sameName(name, currentName) && cleanName(name) === currentName) {
       setEditing(false);
+      return;
+    }
+    setSaving(true);
+    setNameError(null);
+    try {
+      await updateDisplayName(cleanName(name));
+      setEditing(false);
+      showToast('Nome atualizado!');
+    } catch (e) {
+      if (e instanceof NameTakenError) {
+        setNameState('taken');
+        setNameError(e.message);
+      } else setNameError('Não foi possível salvar agora. Verifique a conexão e tente de novo.');
     } finally {
       setSaving(false);
     }
   };
+  const nameHint =
+    nameError ??
+    (nameState === 'invalid'
+      ? nameProblem(name)
+      : nameState === 'checking'
+        ? 'Verificando se o nome está livre…'
+        : nameState === 'free'
+          ? '✓ Nome disponível'
+          : nameState === 'taken'
+            ? '✗ Esse nome já está em uso por outro jogador'
+            : null);
+  const nameBlocked = saving || nameState === 'taken' || nameState === 'invalid' || nameState === 'checking';
 
   return (
     <div className="page profile-page">
@@ -99,19 +185,26 @@ export function Perfil() {
           {signedIn ? (
             editing ? (
               <form
-                className="row"
+                className="name-form"
                 onSubmit={(e) => {
                   e.preventDefault();
                   void save();
                 }}
               >
-                <input className="search" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} aria-label="Nome de exibição" autoFocus />
-                <button className="btn btn-gold btn-sm" disabled={saving || !name.trim()}>
-                  Salvar
-                </button>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(false)}>
-                  Cancelar
-                </button>
+                <div className="row">
+                  <input className="search" value={name} maxLength={NAME_MAX} onChange={(e) => setName(e.target.value)} aria-label="Nome de exibição" autoFocus />
+                  <button className="btn btn-gold btn-sm" disabled={nameBlocked}>
+                    {saving ? 'Salvando…' : 'Salvar'}
+                  </button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(false)}>
+                    Cancelar
+                  </button>
+                </div>
+                {nameHint && (
+                  <p className={`name-hint is-${nameError || nameState === 'taken' || nameState === 'invalid' ? 'bad' : nameState === 'free' ? 'ok' : 'info'}`} role="status">
+                    {nameHint}
+                  </p>
+                )}
               </form>
             ) : (
               <h2>
@@ -135,6 +228,18 @@ export function Perfil() {
         </div>
         {signedIn && <SignOutButton />}
       </section>
+
+      {!chosenAvatar && (
+        <section className="avatar-cta panel">
+          <div>
+            <strong>Escolha o seu avatar</strong>
+            <span className="dim">Sua foto no jogo é um craque do futebol brasileiro: escolha o jogador, o clube e a época.</span>
+          </div>
+          <button className="btn btn-gold" onClick={() => setPicking(true)}>
+            Escolher avatar
+          </button>
+        </section>
+      )}
 
       <div className="profile-stats">
         <Stat v={career.seasonsPlayed} k="Temporadas disputadas" />
