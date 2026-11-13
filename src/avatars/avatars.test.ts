@@ -5,7 +5,7 @@ import { tierOf } from '../components/cardTier';
 import { allAvatarCards, filterAvatarCards } from '../components/AvatarPicker';
 import { avatarKey, avatarMarkup, avatarRefOf, customAvatar, playerLook } from './index';
 import { CLUB_KITS, goalkeeperKit, kitOf } from './kits';
-import { decodeLook, lookCode } from './looks';
+import { decodeLook, generatedLook, lookCode } from './looks';
 import { LOOKS } from './looksData';
 
 const cards = [...db.cardByKey.values()];
@@ -55,6 +55,36 @@ describe('avatares dos jogadores', () => {
     expect(playerLook('ronaldo-nazario', 'cruzeiro', '1990s').hair).toBe('buzz');
     expect(playerLook('ronaldo-nazario', 'corinthians', '2000s').hair).toBe('bald');
     expect(playerLook('neymar', 'santos', '2010s').hair).toBe('mohawk');
+    expect(playerLook('romario', 'vasco', '2000s').hair).toBe('buzz');
+  });
+
+  it('aparência pesquisada: pele, cabelo e barba de jogadores conferidos nas fotos', () => {
+    const memphis = playerLook('memphis-depay', 'corinthians', '2020s');
+    expect([memphis.hair, memphis.facial]).toEqual(['cornrows', 'short-beard']);
+    const cassio = playerLook('cassio-ramos', 'corinthians', '2010s');
+    expect(cassio.hair).toBe('long');
+    expect(playerLook('roger-guedes', 'corinthians', '2020s').hair).not.toBe('long');
+    expect(playerLook('jairzinho', 'botafogo', '1970s').hair).toBe('afro');
+  });
+
+  it('códigos com cor dos olhos e novos penteados', () => {
+    expect(decodeLook('x', '2Sdcv')?.eyes).toBe('green');
+    expect(decodeLook('x', '1Sbsa')?.eyes).toBe('blue');
+    expect(decodeLook('x', '5Ok0')?.eyes).toBe('dark');
+    expect(decodeLook('x', '4Nkc')?.hair).toBe('cornrows');
+    expect(decodeLook('x', '3Udc')?.hair).toBe('bun');
+    expect(decodeLook('x', '9Zk0')).toBeNull();
+  });
+
+  it('sem pesquisa, o visual é neutro (sem traços marcantes inventados)', () => {
+    for (let i = 0; i < 200; i++) {
+      const look = generatedLook(`teste-${i}`, i % 2 ? '1970s' : '2010s');
+      expect(look.curated).toBe(false);
+      expect([3, 4]).toContain(look.skin);
+      expect(['short', 'part', 'buzz']).toContain(look.hair);
+      expect(look.facial).toBe('none');
+      expect(['black', 'dark']).toContain(look.hairColor);
+    }
   });
 
   it('a curadoria de aparência é válida e aponta para jogadores existentes', () => {

@@ -1,12 +1,29 @@
 // Aparência de cada jogador (a mesma pessoa tem o mesmo rosto em todos os
-// clubes; só o uniforme muda). Os traços vêm de LOOKS (curadoria, inspirada nas
-// características gerais do jogador real) ou, na falta dela, de uma escolha
-// determinística a partir do identificador do jogador.
+// clubes; só o uniforme e, quando mudou, o visual da época mudam). Os traços vêm
+// de LOOKS (pesquisa: tom de pele, cabelo, barba e olhos do jogador real). Sem
+// pesquisa, o jogador recebe um visual neutro e discreto, sem traços marcantes
+// inventados.
 import type { Decade } from '../data/types';
 import { LOOKS, type LookEntry } from './looksData';
 
 export type SkinTone = 1 | 2 | 3 | 4 | 5 | 6;
-export type HairStyle = 'bald' | 'buzz' | 'short' | 'part' | 'curly' | 'afro' | 'wavy' | 'long' | 'mullet' | 'dreads' | 'top' | 'mohawk' | 'receding';
+export type HairStyle =
+  | 'bald'
+  | 'buzz'
+  | 'short'
+  | 'part'
+  | 'curly'
+  | 'shortafro'
+  | 'afro'
+  | 'wavy'
+  | 'long'
+  | 'mullet'
+  | 'dreads'
+  | 'cornrows'
+  | 'bun'
+  | 'top'
+  | 'mohawk'
+  | 'receding';
 export type HairColor = 'black' | 'dark' | 'brown' | 'blond' | 'red' | 'gray' | 'white';
 export type FacialHair = 'none' | 'stubble' | 'mustache' | 'goatee' | 'beard' | 'short-beard';
 export type FaceShape = 'oval' | 'round' | 'square' | 'long';
@@ -28,7 +45,7 @@ export interface Look {
   brow: number;
   /** Largura do nariz (0 a 2). */
   nose: number;
-  /** true quando os traços vêm da curadoria. */
+  /** true quando os traços vêm da pesquisa (LOOKS). */
   curated: boolean;
 }
 
@@ -38,17 +55,21 @@ const HAIR_CODE: Record<string, HairStyle> = {
   S: 'short',
   P: 'part',
   C: 'curly',
+  O: 'shortafro',
   A: 'afro',
   W: 'wavy',
   L: 'long',
   M: 'mullet',
   D: 'dreads',
+  N: 'cornrows',
+  U: 'bun',
   T: 'top',
   X: 'mohawk',
   R: 'receding',
 };
 const COLOR_CODE: Record<string, HairColor> = { k: 'black', d: 'dark', b: 'brown', y: 'blond', r: 'red', g: 'gray', w: 'white' };
 const FACIAL_CODE: Record<string, FacialHair> = { '0': 'none', s: 'stubble', m: 'mustache', g: 'goatee', f: 'beard', c: 'short-beard' };
+const EYE_CODE: Record<string, EyeColor> = { a: 'blue', v: 'green', l: 'hazel', k: 'dark' };
 
 export function hashString(text: string): number {
   let h = 0x811c9dc5;
@@ -81,44 +102,12 @@ function pick<T>(r: () => number, items: [T, number][]): T {
   return items[items.length - 1][0];
 }
 
-/** Penteados e barbas mais comuns em cada época (para os traços gerados). */
-function eraHair(decade: Decade): [HairStyle, number][] {
-  const early = decade <= '1960s';
-  const seventies = decade === '1970s' || decade === '1980s';
-  const modern = decade >= '2010s';
-  return [
-    ['short', early ? 5 : 3],
-    ['part', early ? 6 : seventies ? 2 : 1],
-    ['buzz', modern ? 3 : 2],
-    ['curly', seventies ? 4 : 3],
-    ['afro', seventies ? 2.2 : 0.6],
-    ['wavy', seventies ? 1.6 : 0.3],
-    ['long', seventies ? 1 : 0.4],
-    ['mullet', decade === '1980s' || decade === '1990s' ? 1.4 : 0.2],
-    ['dreads', modern ? 0.6 : decade === '2000s' ? 0.4 : 0],
-    ['top', modern ? 4 : decade === '2000s' ? 1.5 : 0],
-    ['receding', early ? 1 : 0.6],
-    ['bald', decade >= '1990s' ? 0.8 : 0.3],
-  ];
-}
 
-function eraFacial(decade: Decade): [FacialHair, number][] {
-  const seventies = decade === '1970s' || decade === '1980s';
-  const modern = decade >= '2010s';
-  return [
-    ['none', seventies ? 5 : modern ? 4 : 9],
-    ['mustache', seventies ? 2.4 : 0.4],
-    ['stubble', modern ? 2 : 0.6],
-    ['goatee', modern ? 1 : decade === '2000s' ? 1 : 0.2],
-    ['beard', modern ? 1.6 : seventies ? 0.6 : 0.1],
-    ['short-beard', modern ? 1.6 : 0.3],
-  ];
-}
 
-const STRUCTURE_KEYS = ['face', 'expression', 'eyes', 'turn', 'brow', 'nose'] as const;
+const STRUCTURE_KEYS = ['face', 'expression', 'turn', 'brow', 'nose'] as const;
 
-/** Traços de estrutura do rosto (sempre derivados do identificador). */
-function structure(id: string, skin: SkinTone): Pick<Look, (typeof STRUCTURE_KEYS)[number]> {
+/** Traços de estrutura do rosto (formato, expressão, pose), derivados do identificador. */
+function structure(id: string): Pick<Look, (typeof STRUCTURE_KEYS)[number]> {
   const r = rng(hashString(`rosto:${id}`));
   const face = pick<FaceShape>(r, [
     ['oval', 4],
@@ -132,63 +121,55 @@ function structure(id: string, skin: SkinTone): Pick<Look, (typeof STRUCTURE_KEY
     ['neutral', 2],
     ['focused', 3],
   ]);
-  const eyes = skin <= 2 ? pick<EyeColor>(r, [['brown', 4], ['hazel', 2], ['green', 1.4], ['blue', 1.6]]) : pick<EyeColor>(r, [['brown', 5], ['dark', 4], ['hazel', 1]]);
   const turn = Math.round((r() * 8 - 4) * 10) / 10;
   const brow = Math.floor(r() * 3);
   const nose = Math.floor(r() * 3);
-  return { face, expression, eyes, turn, brow, nose };
+  return { face, expression, turn, brow, nose };
+}
+
+/** Olhos castanhos por padrão (mais escuros nas peles mais escuras). */
+function defaultEyes(skin: SkinTone): EyeColor {
+  return skin >= 4 ? 'dark' : 'brown';
 }
 
 /**
- * Decodifica um código de aparência: tom de pele (1–6), penteado, cor do cabelo
- * e barba, mais marcadores opcionais (h = faixa na cabeça, + = sorriso, = = sério).
- * Ex.: "5Ck0" (pele 5, cabelo cacheado curto, preto, sem barba).
+ * Decodifica um código de aparência: tom de pele (1–6), penteado, cor do cabelo,
+ * barba, cor dos olhos opcional (a azul, v verde, l mel, k castanho-escuro) e
+ * marcadores opcionais (h = faixa na cabeça, + = sorriso aberto, = = sério).
+ * Ex.: "5Ok0" (pele 5, black curto, preto, sem barba); "2Sdcv" (olhos verdes).
  */
 export function decodeLook(id: string, code: string): Look | null {
-  const m = /^([1-6])([A-Z])([a-z])([0a-z])([h+=]*)$/.exec(code);
+  const m = /^([1-6])([A-Z])([a-z])([0a-z])([avlk]?)([h+=]*)$/.exec(code);
   if (!m) return null;
   const hair = HAIR_CODE[m[2]];
   const hairColor = COLOR_CODE[m[3]];
   const facial = FACIAL_CODE[m[4]];
   if (!hair || !hairColor || !facial) return null;
   const skin = Number(m[1]) as SkinTone;
-  const look: Look = { skin, hair, hairColor, facial, headband: m[5].includes('h'), ...structure(id, skin), curated: true };
-  if (m[5].includes('+')) look.expression = 'grin';
-  if (m[5].includes('=')) look.expression = 'focused';
+  const eyes = m[5] ? EYE_CODE[m[5]] : defaultEyes(skin);
+  const look: Look = { skin, hair, hairColor, facial, headband: m[6].includes('h'), eyes, ...structure(id), curated: true };
+  if (m[6].includes('+')) look.expression = 'grin';
+  if (m[6].includes('=')) look.expression = 'focused';
   return look;
 }
 
-/** Aparência gerada, coerente com a época em que o jogador começou. */
+/**
+ * Visual neutro para quem ainda não tem pesquisa de aparência: tom de pele
+ * intermediário, cabelo curto comum na época, cabelo escuro, sem barba e olhos
+ * castanhos. Evita inventar traços marcantes (cabelo longo, black power, loiro,
+ * barba) que o jogador real talvez não tivesse.
+ */
 export function generatedLook(id: string, firstDecade: Decade): Look {
   const r = rng(hashString(`visual:${id}`));
-  const skin = pick<SkinTone>(r, [
-    [1, 1.2],
-    [2, 2],
-    [3, 2.4],
-    [4, 2],
-    [5, 1.4],
-    [6, 1],
+  const skin: SkinTone = r() < 0.5 ? 3 : 4;
+  const early = firstDecade <= '1960s';
+  const modern = firstDecade >= '2010s';
+  const hair = pick<HairStyle>(r, [
+    ['short', 5],
+    ['part', early ? 4 : 0.5],
+    ['buzz', modern ? 3 : 1],
   ]);
-  let hair = pick(r, eraHair(firstDecade));
-  if (hair === 'afro' && skin <= 2) hair = 'curly';
-  const hairColor = pick<HairColor>(
-    r,
-    skin <= 2
-      ? [
-          ['dark', 4],
-          ['brown', 3],
-          ['black', 2],
-          ['blond', 1.2],
-          ['red', 0.2],
-        ]
-      : [
-          ['black', 6],
-          ['dark', 3],
-          ['brown', 0.6],
-        ],
-  );
-  const facial = pick(r, eraFacial(firstDecade));
-  return { skin, hair, hairColor, facial, headband: false, ...structure(id, skin), curated: false };
+  return { skin, hair, hairColor: r() < 0.6 ? 'black' : 'dark', facial: 'none', headband: false, eyes: defaultEyes(skin), ...structure(id), curated: false };
 }
 
 /** Código da aparência para o clube e a década (o visual da época no clube). */

@@ -220,15 +220,57 @@ function hairLayers(look: Look, g: Geo, r: () => number): HairLayers {
       break;
     }
     case 'dreads': {
-      for (let i = 0; i < 8; i++) {
-        const side = i < 4 ? -1 : 1;
-        const k = i % 4;
-        const x = cx + side * (hw - 2 + k * 3.2);
-        const len = 104 + k * 7 + r() * 6;
-        back += `<path d="M${f(x)} 62 L${f(x + side * 2)} ${f(len)}" stroke="${INK}" stroke-width="8.6" stroke-linecap="round"/><path d="M${f(x)} 62 L${f(x + side * 2)} ${f(len)}" stroke="${c.base}" stroke-width="5.6" stroke-linecap="round"/>`;
+      // massa de dreads atrás da cabeça, caindo até os ombros
+      const mass = `M${f(cx - hw - 9)} 132 C${f(cx - hw - 14)} 96 ${f(cx - hw - 12)} ${top - 2} ${f(cx)} ${top - 9} C${f(cx + hw + 12)} ${top - 2} ${f(cx + hw + 14)} 96 ${f(cx + hw + 9)} 132 Q${f(cx)} 142 ${f(cx - hw - 9)} 132 Z`;
+      back = fill(mass);
+      for (let i = 0; i < 10; i++) {
+        const side = i < 5 ? -1 : 1;
+        const k = i % 5;
+        const x0 = cx + side * (hw + 1 - k * 1.2);
+        const x1 = cx + side * (hw + 7 - k * 2.4);
+        const y1 = 116 + k * 4 + r() * 6;
+        back += `<path d="M${f(x0)} 70 Q${f(x0 + side * 4)} 96 ${f(x1)} ${f(y1)}" fill="none" stroke="${c.shade}" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>`;
       }
-      front = fill(hairCap(g, 9, 55, 84));
-      for (let i = 0; i < 5; i++) front += `<path d="M${f(cx - 22 + i * 11)} ${top - 4} l-2 12" stroke="${c.light}" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>`;
+      front = fill(hairCap(g, 9, 56, 84));
+      for (let i = 0; i < 7; i++) {
+        const x = cx - 24 + i * 8;
+        front += `<path d="M${f(x)} ${top - 5} Q${f(x + 1)} ${top + 4} ${f(x - 1)} ${top + 12}" fill="none" stroke="${c.shade}" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>`;
+      }
+      break;
+    }
+    case 'cornrows': {
+      // tranças rentes à cabeça, da testa para trás, presas num coque trançado
+      back = `<circle cx="${f(cx + 1)}" cy="${top - 8}" r="10" fill="${c.base}" stroke="${INK}" stroke-width="2.2"/>`;
+      for (let k = -1; k <= 1; k++) back += `<path d="M${f(cx - 6)} ${top - 8 + k * 4.5} q7 -3 14 0" fill="none" stroke="${c.light}" stroke-width="1.3" stroke-linecap="round" opacity="0.7"/>`;
+      front = fill(hairCap(g, 4, 56, 82));
+      for (let i = -3; i <= 3; i++) {
+        const x0 = cx + i * 7.2;
+        const x1 = cx + i * 2.6;
+        front += `<path d="M${f(x0)} ${f(57.5 - Math.abs(i) * 0.3)} Q${f(x0 * 0.55 + x1 * 0.45)} ${f(top + 10)} ${f(x1)} ${f(top - 1)}" fill="none" stroke="${c.shade}" stroke-width="2" stroke-linecap="round"/>`;
+        for (let t = 0; t < 3; t++) {
+          const yy = 52 - t * 6.5;
+          const xx = x0 + (x1 - x0) * ((57.5 - yy) / (57.5 - top + 1)) + 3.4;
+          if (i < 3) front += `<path d="M${f(xx - 1.4)} ${f(yy + 1.2)} l1.4 -1.6 l1.4 1.6" fill="none" stroke="${c.light}" stroke-width="0.9" stroke-linecap="round" opacity="0.65"/>`;
+        }
+      }
+      break;
+    }
+    case 'bun': {
+      // cabelo preso em coque no alto da cabeça
+      back = `<circle cx="${f(cx + 2)}" cy="${top - 9}" r="11.5" fill="${c.base}" stroke="${INK}" stroke-width="2.2"/><path d="M${f(cx - 4)} ${top - 12} q6 -5 12 1" fill="none" stroke="${c.light}" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/>`;
+      front = fill(hairCap(g, 4, 56)) + `<path d="M${f(cx - 18)} ${top + 3} Q${f(cx)} ${top - 6} ${f(cx + 18)} ${top + 3}" fill="none" stroke="${c.shade}" stroke-width="1.4"/>` + shine(`M${f(cx - 14)} ${top} Q${f(cx - 2)} ${top - 5} ${f(cx + 10)} ${top - 2}`);
+      break;
+    }
+    case 'shortafro': {
+      // black curto: volume arredondado e texturizado, rente às laterais
+      const cap = scallops(cx, top + 15, hw + 6.5, 27, 168, 372, 18, 0.05);
+      const d = `M${f(cx - hw + 3)} 82 L${f(cx - hw - 4.5)} 76 ${cap.replace(/^[^Q]*/, `L${f(cx - hw - 5.5)} ${top + 20} `)} L${f(cx + hw + 4.5)} 76 L${f(cx + hw - 3)} 82 C${f(cx + hw - 4)} 66 ${f(cx + hw - 9)} 59 ${f(cx + 14)} 56.5 Q${f(cx)} 58.5 ${f(cx - 14)} 56.5 C${f(cx - hw + 9)} 59 ${f(cx - hw + 4)} 66 ${f(cx - hw + 3)} 82 Z`;
+      front = fill(d);
+      for (let i = 0; i < 14; i++) {
+        const x = cx - hw * 0.75 + r() * hw * 1.5;
+        const y = top - 4 + r() * 14;
+        front += `<circle cx="${f(x)}" cy="${f(y)}" r="1.1" fill="${c.light}" opacity="0.55"/>`;
+      }
       break;
     }
     case 'top': {
@@ -239,7 +281,8 @@ function hairLayers(look: Look, g: Geo, r: () => number): HairLayers {
         `C${f(cx + 20)} ${top - 14} ${f(cx + hw + 1)} 44 ${f(cx + hw - 2)} 60`,
         `C${f(cx + 12)} 52 ${f(cx - 10)} 52 ${f(cx - hw + 2)} 62 Z`,
       ].join(' ');
-      front = sides + fill(tuft) + shine(`M${f(cx - 14)} ${top - 6} Q${f(cx)} ${top - 13} ${f(cx + 14)} ${top - 8}`);
+      const strands = [-12, -4, 4, 12].map((dx) => `<path d="M${f(cx + dx - 2)} ${top - 9} Q${f(cx + dx + 1)} ${top - 2} ${f(cx + dx - 1)} ${top + 6}" fill="none" stroke="${c.shade}" stroke-width="1.3" stroke-linecap="round" opacity="0.75"/>`).join('');
+      front = sides + fill(tuft) + strands + shine(`M${f(cx - 14)} ${top - 6} Q${f(cx)} ${top - 13} ${f(cx + 14)} ${top - 8}`);
       break;
     }
     case 'mohawk': {

@@ -15,7 +15,15 @@ Assim, Sócrates aparece com a camisa do Corinthians, do Flamengo e do Santos, c
 
 ## Aparência
 
-`src/avatars/looksData.ts` guarda os traços gerais e públicos dos jogadores mais conhecidos (tom de pele, penteado marcante, cor do cabelo, barba ou bigode, faixa na cabeça), para lembrar o jogador sem reproduzir o rosto real. Quando o visual mudou na carreira, cada época ou clube tem o seu:
+A aparência de cada jogador foi **pesquisada nas fotos de referência**: as fotos livres do Wikimedia Commons ligadas a cada jogador na base e, para quem não tinha foto livre, a imagem principal do artigo da Wikipédia. As fotos serviram só de consulta e não fazem parte do jogo. De cada uma foram anotados os traços gerais:
+
+- **tom de pele** (6 tons);
+- **cabelo** como era na época em que o jogador atuou (curto, raspado, cacheado, black curto, black power, longo, mullet, dreads, tranças rentes, coque, topete, moicano, entradas) e a **cor** (inclusive loiro descolorido);
+- **barba** (por fazer, bigode, cavanhaque, curta, cheia);
+- **cor dos olhos**, quando é clara (castanhos por padrão);
+- acessórios marcantes, como a faixa de cabelo.
+
+Quando a foto é de uma fase posterior (o jogador já veterano, de cabelo branco), o tom de pele vem da foto e o cabelo segue a época em que ele jogou. Quando o visual mudou na carreira, cada época ou clube tem o seu:
 
 ```ts
 'ronaldinho-gaucho': { base: '4Wk0h+', '1990s': '4Sk0+', '2000s': '4Sk0+' },  // curto no Grêmio, longo com faixa no Atlético-MG
@@ -23,9 +31,9 @@ Assim, Sócrates aparece com a camisa do Corinthians, do Flamengo e do Santos, c
 neymar: { base: '3Tds+', '2000s': '3Xd0+', '2010s': '3Xd0+' },                 // moicano no Santos
 ```
 
-O código tem quatro partes: tom de pele (1 a 6), penteado, cor do cabelo e barba, mais marcadores opcionais (`h` faixa, `+` sorriso aberto, `=` sério). A legenda completa está no topo do arquivo. A prioridade é `clube@década`, depois `clube`, depois `década` e por fim `base`.
+O código e a legenda completa estão em `src/avatars/looksData.ts`. A prioridade é `clube@década`, depois `clube`, depois `década` e por fim `base`.
 
-Os jogadores fora da lista recebem um visual **gerado** a partir do próprio id, coerente com a época em que começaram (mais bigodes e cabelos volumosos nos anos 70 e 80, topetes e barbas nos anos 2010...). Para ajustar qualquer jogador, basta incluir o código dele no arquivo.
+Jogadores **sem nenhuma foto de referência** recebem um visual **neutro** (tom de pele intermediário, cabelo curto escuro, sem barba), para não inventar traços marcantes que o jogador real talvez não tivesse. Para corrigir ou completar qualquer jogador, basta incluir ou trocar o código dele no arquivo.
 
 ## Ilustrações próprias
 
