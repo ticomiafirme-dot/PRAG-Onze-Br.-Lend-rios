@@ -106,7 +106,7 @@ export function UserAvatar({ size = 36 }: { size?: number }) {
   const user = useAuth((s) => s.user);
   const chosen = useProfileAvatar();
   const [failed, setFailed] = useState(false);
-  const card = chosen ? db.cardByKey.get(chosen) : undefined;
+  const card = db.cardMaybe(chosen);
   if (card) return <PlayerFace card={card} size={size} className="user-avatar-face" />;
   const initials = (user?.name ?? '?')
     .split(/\s+/)
@@ -126,7 +126,7 @@ export function UserAvatar({ size = 36 }: { size?: number }) {
 export function ProfileAvatar({ size = 36 }: { size?: number }) {
   const status = useAuth((s) => s.status);
   const chosen = useProfileAvatar();
-  const card = chosen ? db.cardByKey.get(chosen) : undefined;
+  const card = db.cardMaybe(chosen);
   if (status === 'signed-in') return <UserAvatar size={size} />;
   if (card) return <PlayerFace card={card} size={size} className="user-avatar-face" />;
   return (

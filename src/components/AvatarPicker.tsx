@@ -51,7 +51,7 @@ export function AvatarPicker({ onClose, onSaved }: { onClose: () => void; onSave
 
   const results = useMemo(() => filterAvatarCards(allAvatarCards(), { query, club, decade }), [query, club, decade]);
   const decades = club ? DECADES.filter((d) => CLUB_BY_ID[club]?.decades.includes(d)) : DECADES;
-  const chosen = selected ? db.cardByKey.get(selected) : undefined;
+  const chosen = db.cardMaybe(selected);
   const filtered = Boolean(query || club || decade);
 
   const update = (fn: () => void) => {

@@ -20,8 +20,8 @@ import type { Run } from './store';
  * reorganiza pelo emparelhamento máximo e devolve os que não couberem.
  */
 export function repairPicks(slots: Slot[], picks: Record<string, string>): { picks: Record<string, string>; dropped: string[] } {
-  const known = Object.entries(picks).filter(([, k]) => db.cardByKey.has(k));
-  const unknown = Object.values(picks).filter((k) => !db.cardByKey.has(k));
+  const known = Object.entries(picks).filter(([, k]) => !!db.cardMaybe(k));
+  const unknown = Object.values(picks).filter((k) => !db.cardMaybe(k));
   const out: Record<string, string> = {};
   const pending: string[] = [];
   for (const [slotId, key] of known) {
@@ -77,7 +77,7 @@ function migrateSheet(sheet: TeamSheet): TeamSheet {
     ...sheet,
     players: sheet.players.map((p) => {
       const old = p.pos as string;
-      return { ...p, pos: toPosition(old), role: p.role ?? (isRole(old) ? old : db.cardByKey.get(p.cardKey)?.player.position) };
+      return { ...p, pos: toPosition(old), role: p.role ?? (isRole(old) ? old : db.cardMaybe(p.cardKey)?.player.position) };
     }),
   };
 }

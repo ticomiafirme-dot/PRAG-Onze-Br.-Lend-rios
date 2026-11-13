@@ -53,7 +53,7 @@ describe('avatares dos jogadores', () => {
     expect(galo.hair).toBe('wavy');
     expect(galo.headband).toBe(true);
     expect(playerLook('ronaldo-nazario', 'cruzeiro', '1990s').hair).toBe('buzz');
-    expect(playerLook('ronaldo-nazario', 'corinthians', '2000s').hair).toBe('bald');
+    expect(playerLook('ronaldo-nazario', 'corinthians', '2000s').hair).toBe('buzz');
     expect(playerLook('neymar', 'santos', '2010s').hair).toBe('mohawk');
     expect(playerLook('romario', 'vasco', '2000s').hair).toBe('buzz');
   });
@@ -140,5 +140,16 @@ describe('escolha da foto de perfil', () => {
     expect(new Set(socrates.map((c) => c.club))).toEqual(new Set(['corinthians', 'flamengo', 'santos']));
     expect(filterAvatarCards(all, { query: 'SÓCRATES', club: 'flamengo' }).every((c) => c.club === 'flamengo')).toBe(true);
     expect(filterAvatarCards(all, { query: 'zzzz-nao-existe' })).toEqual([]);
+  });
+});
+
+describe('correção de identidade (homônimos)', () => {
+  it('o Robinho do Santos é o Robson de Souza, e chaves antigas salvas continuam funcionando', () => {
+    const santos = db.cardByKey.get('robinho@santos@2000s');
+    expect(santos?.player.fullName).toBe('Robson de Souza');
+    expect(santos?.overall).toBe(90);
+    expect(db.card('robson-michael-signorini@santos@2000s').key).toBe('robinho@santos@2000s');
+    expect(db.clubsOfPerson('robinho').sort()).toEqual(['atletico-mg', 'santos']);
+    expect(db.clubsOfPerson('robson-michael-signorini')).toEqual(['coritiba']);
   });
 });

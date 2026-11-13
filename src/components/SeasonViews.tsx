@@ -118,7 +118,7 @@ export function SeasonLineup({ formationId, lineup }: { formationId: SeasonEntry
       renderSlot={(slot) => {
         const p = bySlot.get(slot.id);
         if (!p) return null;
-        const card = db.cardByKey.get(p.cardKey);
+        const card = db.cardMaybe(p.cardKey);
         if (card) return <PlayerCard card={{ ...card, overall: p.overall }} size="sm" pos={p.pos} captain={p.captain} />;
         return (
           <div className="pcard pcard-sm saved-card">

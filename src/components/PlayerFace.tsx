@@ -30,7 +30,7 @@ export function PlayerFace({ card, size = 32, tier, className }: { card: Card; s
 
 /** Avatar a partir da chave da carta (escalações salvas, estatísticas). */
 export function PlayerFaceByKey({ cardKey, size = 28, className }: { cardKey: string | null | undefined; size?: number; className?: string }) {
-  const card = cardKey ? db.cardByKey.get(cardKey) : undefined;
+  const card = db.cardMaybe(cardKey);
   if (!card) return <span className={`pavatar pavatar-empty ${className ?? ''}`} style={{ width: size, height: size }} aria-hidden="true" />;
   return <PlayerFace card={card} size={size} className={className} />;
 }

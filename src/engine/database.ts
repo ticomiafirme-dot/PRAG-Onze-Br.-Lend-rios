@@ -51,9 +51,15 @@ export class Database {
   }
 
   card(key: string): Card {
-    const c = this.cardByKey.get(key);
+    const c = this.cardMaybe(key);
     if (!c) throw new Error(`Carta desconhecida: ${key}`);
     return c;
+  }
+
+  /** Carta pela chave, aceitando chaves antigas de registros corrigidos (partidas e históricos salvos). */
+  cardMaybe(key: string | null | undefined): Card | undefined {
+    if (!key) return undefined;
+    return this.cardByKey.get(key) ?? this.cardByKey.get(LEGACY_CARD_KEYS[key] ?? '');
   }
 
   /** Décadas do clube que realmente têm jogadores cadastrados. */
@@ -71,6 +77,15 @@ export class Database {
     return (this.recordsByPerson.get(personId) ?? []).map((r) => r.club);
   }
 }
+
+/**
+ * Chaves de cartas que mudaram por correção de dados. Ex.: o Robinho do Santos
+ * (Robson de Souza) estava ligado por engano ao Róbson Michael Signorini.
+ */
+export const LEGACY_CARD_KEYS: Record<string, string> = {
+  'robson-michael-signorini@santos@2000s': 'robinho@santos@2000s',
+  'robson-michael-signorini@santos@2010s': 'robinho@santos@2010s',
+};
 
 export function cardKey(id: string, club: string, decade: Decade): string {
   return `${id}@${club}@${decade}`;
