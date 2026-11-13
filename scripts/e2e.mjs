@@ -213,6 +213,28 @@ async function run(label, contextOpts) {
     const shared = await page.evaluate(() => window.__shared);
     if (!shared || !/^PRAG-.+-Resultado\.png:image\/png:\d{5,}$/.test(shared)) errors.push(`compartilhamento nativo não recebeu o PNG: ${shared}`);
   }
+
+  // arte da escalação: aba na mesma janela
+  step('arte da escalação');
+  await page.getByRole('tab', { name: 'Escalação' }).click();
+  await page.waitForFunction(() => /escala/i.test(document.querySelector('.share-preview img')?.getAttribute('alt') ?? ''), null, { timeout: 20000 });
+  const ldims = await page.evaluate(async () => {
+    const img = document.querySelector('.share-preview img');
+    const blob = await (await fetch(img.src)).blob();
+    return { w: img.naturalWidth, h: img.naturalHeight, type: blob.type, size: blob.size };
+  });
+  if (ldims.w !== 1080 || ldims.h !== 1350 || ldims.type !== 'image/png' || ldims.size < 80_000) errors.push(`arte da escalação com formato inesperado: ${JSON.stringify(ldims)}`);
+  await shot('15d-escalacao');
+  const [ldl] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), page.getByRole('button', { name: /Baixar arte/i }).click()]);
+  const lname = ldl.suggestedFilename();
+  if (!/^PRAG-Corinthians-.+-Escalacao\.png$/.test(lname)) errors.push(`nome do arquivo da escalação: ${lname}`);
+  await ldl.saveAs(path.join(OUT, `${label}-${lname}`));
+  if (label !== 'desktop') {
+    await page.getByRole('button', { name: /Compartilhar imagem/i }).click();
+    await page.waitForTimeout(300);
+    const shared2 = await page.evaluate(() => window.__shared);
+    if (!shared2 || !/^PRAG-.+-Escalacao\.png:image\/png:\d{5,}$/.test(shared2)) errors.push(`compartilhamento nativo da escalação: ${shared2}`);
+  }
   await page.keyboard.press('Escape');
 
   // histórico, detalhe da temporada, conquistas, recordes e Hall

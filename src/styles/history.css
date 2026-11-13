@@ -10,6 +10,42 @@
   font-size: 24px;
 }
 
+.share-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+}
+
+.share-tab {
+  flex: 1;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: none;
+  color: var(--text-2);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.share-tab.is-active {
+  background: var(--gold-gradient);
+  color: #1a1300;
+}
+
+.share-tab:focus-visible {
+  outline: 2px solid #ffd23a;
+  outline-offset: 2px;
+}
+
 .share-preview {
   display: grid;
   place-items: center;

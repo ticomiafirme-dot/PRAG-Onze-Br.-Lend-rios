@@ -12,6 +12,7 @@ import { fmtDate, SeasonCrest, SeasonLineup, statusLabel } from '../components/S
 import { ShareModal } from '../share/ShareModal';
 import { headline, renderResultCard, resultFilename } from '../share/resultCard';
 import { PlayerFaceByKey } from '../components/PlayerFace';
+import { hasLineup, lineupFilename, lineupText, renderLineupCard } from '../share/lineupCard';
 
 const COMP_LABEL: Record<MatchLine['comp'], string> = { brasileirao: 'Brasileirão', copa: 'Copa do Brasil', estadual: 'Estadual' };
 
@@ -30,7 +31,7 @@ export function Temporada({ id }: { id: string }) {
   const season = useHistory((s) => s.data.seasons.find((x) => x.runId === id));
   const { details, loading } = useSeasonDetails(season ? id : null);
   const playerName = usePlayerName();
-  const [sharing, setSharing] = useState(false);
+  const [sharing, setSharing] = useState<'resultado' | 'escalacao' | null>(null);
   const [comp, setComp] = useState<MatchLine['comp']>('brasileirao');
 
   if (!season) {
@@ -52,11 +53,18 @@ export function Temporada({ id }: { id: string }) {
     <div className="page season-page">
       <div className="page-head">
         <BackLink to="/historico" label="Histórico" />
-        {s.status !== 'in_progress' && (
-          <button className="btn btn-gold" onClick={() => setSharing(true)}>
-            Gerar arte do resultado
-          </button>
-        )}
+        <div className="row wrap" style={{ gap: 8 }}>
+          {hasLineup(details) && (
+            <button className="btn btn-ghost" onClick={() => setSharing('escalacao')}>
+              Arte da escalação
+            </button>
+          )}
+          {s.status !== 'in_progress' && (
+            <button className="btn btn-gold" onClick={() => setSharing('resultado')}>
+              Gerar arte do resultado
+            </button>
+          )}
+        </div>
       </div>
 
       <section className={`season-hero ${s.perfect ? 'is-perfect' : s.champion ? 'is-champion' : ''}`} style={{ ['--club' as string]: s.colors.primary, ['--club2' as string]: s.colors.secondary }}>
@@ -317,11 +325,16 @@ export function Temporada({ id }: { id: string }) {
 
       {sharing && (
         <ShareModal
-          title="Arte do resultado"
-          filename={resultFilename(s)}
-          text={shareText(s)}
-          render={() => renderResultCard({ season: s, details, playerName })}
-          onClose={() => setSharing(false)}
+          initial={sharing}
+          variants={[
+            ...(s.status !== 'in_progress'
+              ? [{ id: 'resultado', label: 'Resultado', title: 'Arte do resultado', filename: resultFilename(s), text: shareText(s), render: () => renderResultCard({ season: s, details, playerName }) }]
+              : []),
+            ...(hasLineup(details)
+              ? [{ id: 'escalacao', label: 'Escalação', title: 'Arte da escalação', filename: lineupFilename(s), text: lineupText(s, details), render: () => renderLineupCard({ season: s, details, playerName }) }]
+              : []),
+          ]}
+          onClose={() => setSharing(null)}
         />
       )}
     </div>

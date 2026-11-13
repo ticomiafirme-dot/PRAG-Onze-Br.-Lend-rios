@@ -46,11 +46,16 @@ export function headline(s: SeasonEntry): { text: string; tone: 'gold' | 'silver
   return { text: s.position ? `${s.position}º LUGAR NO BRASILEIRÃO` : 'BRASILEIRÃO', tone: 'silver' };
 }
 
-/** Nome do arquivo: PRAG-<Clube>-<década(s)>-Resultado.png */
-export function resultFilename(s: SeasonEntry): string {
+/** Início do nome dos arquivos das artes: PRAG-<Clube>-<década(s)> */
+export function fileBase(s: SeasonEntry): string {
   const decades = s.fixedDecade ? [s.fixedDecade] : s.decades;
   const dec = decades.length === 0 ? '' : decades.length <= 2 ? decades.slice().sort().join('-') : 'Varias-Decadas';
-  return ['PRAG', fileSlug(s.teamName), dec, 'Resultado'].filter(Boolean).join('-') + '.png';
+  return ['PRAG', fileSlug(s.teamName), dec].filter(Boolean).join('-');
+}
+
+/** Nome do arquivo: PRAG-<Clube>-<década(s)>-Resultado.png */
+export function resultFilename(s: SeasonEntry): string {
+  return `${fileBase(s)}-Resultado.png`;
 }
 
 export async function renderResultCard({ season: s, details: d, playerName }: ResultCardInput): Promise<HTMLCanvasElement> {

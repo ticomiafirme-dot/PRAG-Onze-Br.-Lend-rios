@@ -15,12 +15,12 @@ Inspirado nas mecânicas de draft por sorteio do Perfect Season FC, com identida
 7. **Pré-temporada** — força por setor, química e os 19 rivais (cada um escalado com lendas da própria história).
 8. **Brasileirão** — 38 rodadas em turno e returno. Assista às partidas em 1x/2x/4x ou pule para o resultado.
 9. **Estatísticas, resultado final e ranking.**
-10. **Arte do resultado** — card PNG 1080 × 1350 gerado com os dados reais da temporada: baixar, copiar a imagem ou compartilhar direto (celular).
+10. **Arte do resultado e da escalação** — cards PNG 1080 × 1350 gerados com os dados reais da temporada (o resultado e o time em campo na formação usada, com avatares, números, overall e capitão): baixar, copiar a imagem ou compartilhar direto (celular).
 
 ### Sua trajetória
 
 - **Login com Google** (opcional): progresso, histórico, títulos, conquistas e recordes salvos na nuvem e sincronizados entre computador e celular. Também dá para jogar como visitante (dados no aparelho). Configuração em [`docs/CONTAS.md`](docs/CONTAS.md).
-- **Meu Histórico** — cada temporada fica registrada para sempre, com escalação, tabela, jogos e estatísticas; dá para gerar de novo a arte de qualquer temporada antiga.
+- **Meu Histórico** — cada temporada fica registrada para sempre, com escalação, tabela, jogos e estatísticas; dá para gerar de novo as artes (resultado e escalação) de qualquer temporada antiga.
 - **Conquistas** — Temporada Perfeita, Muralha, Artilheiro, Lendas Reunidas, Invencível, Rei do Brasil e outras, com raridade (bronze, prata, ouro, lendária), comemoração animada e arte para compartilhar.
 - **Meus Recordes** — campanha, ataque, defesa e elenco, sempre com a temporada em que foram alcançados.
 - **Hall dos Lendários** — a sala de troféus pessoal: troféus por competição, medalhas, grandes campanhas e o maior elenco no campo.

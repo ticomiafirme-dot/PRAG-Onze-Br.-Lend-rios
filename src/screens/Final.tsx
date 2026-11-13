@@ -17,6 +17,7 @@ import { ShareModal } from '../share/ShareModal';
 import { renderResultCard, resultFilename } from '../share/resultCard';
 import { usePlayerName } from '../cloud/profile';
 import { PlayerFaceByKey } from '../components/PlayerFace';
+import { hasLineup, lineupFilename, lineupText, renderLineupCard } from '../share/lineupCard';
 
 export function Final() {
   const run = useGame((s) => s.run);
@@ -40,7 +41,7 @@ function FinalInner() {
   const formation = getFormation(run.formationId!);
   const [name, setName] = useState(loadPlayerName());
   const [toast, showToast] = useToast();
-  const [showShare, setShowShare] = useState(false);
+  const [showShare, setShowShare] = useState<'resultado' | 'escalacao' | null>(null);
   const stored = useHistory((h) => h.data.seasons.find((x) => x.runId === run.id));
   const record = useMemo(() => buildSeasonRecord(run, 'finished'), [run]);
   const playerName = usePlayerName();
@@ -219,9 +220,14 @@ function FinalInner() {
       </section>
 
       <div className="row wrap final-actions">
-        <button className="btn btn-gold btn-lg" onClick={() => setShowShare(true)} disabled={!record}>
+        <button className="btn btn-gold btn-lg" onClick={() => setShowShare('resultado')} disabled={!record}>
           Compartilhar resultado
         </button>
+        {hasLineup(record?.details) && (
+          <button className="btn btn-ghost btn-lg" onClick={() => setShowShare('escalacao')}>
+            Compartilhar escalação
+          </button>
+        )}
         <a className="btn btn-ghost" href={`#temporada-${run.id}`}>
           Ver no histórico
         </a>
@@ -237,11 +243,30 @@ function FinalInner() {
       </div>
       {showShare && record && (
         <ShareModal
-          title="Compartilhar resultado"
-          filename={resultFilename(record)}
-          text={shareText}
-          render={() => renderResultCard({ season: stored && stored.status === 'finished' ? stored : record, details: record.details, playerName })}
-          onClose={() => setShowShare(false)}
+          initial={showShare}
+          variants={[
+            {
+              id: 'resultado',
+              label: 'Resultado',
+              title: 'Compartilhar resultado',
+              filename: resultFilename(record),
+              text: shareText,
+              render: () => renderResultCard({ season: stored && stored.status === 'finished' ? stored : record, details: record.details, playerName }),
+            },
+            ...(hasLineup(record.details)
+              ? [
+                  {
+                    id: 'escalacao',
+                    label: 'Escalação',
+                    title: 'Compartilhar escalação',
+                    filename: lineupFilename(record),
+                    text: lineupText(record, record.details),
+                    render: () => renderLineupCard({ season: stored && stored.status === 'finished' ? stored : record, details: record.details, playerName }),
+                  },
+                ]
+              : []),
+          ]}
+          onClose={() => setShowShare(null)}
         />
       )}
       {toast}
