@@ -64,6 +64,14 @@
   gap: 10px;
 }
 
+.logo-mark {
+  display: inline-block;
+  flex: none;
+  object-fit: contain;
+  vertical-align: middle;
+  user-select: none;
+}
+
 .logo-text {
   display: flex;
   flex-direction: column;

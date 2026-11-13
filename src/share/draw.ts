@@ -1,9 +1,9 @@
-// Ferramentas de desenho das artes (canvas 2D). Usam os mesmos traços do
-// emblema PRAG, dos escudos e dos ícones da interface.
+// Ferramentas de desenho das artes (canvas 2D). Usam a logo oficial do jogo e
+// os mesmos traços dos escudos e dos ícones da interface.
 import type { Club } from '../data/types';
 import { crestBand, crestPattern, crestShape, crestStars, STAR_PATH } from '../components/crestGeometry';
 import { ICONS, type IconName } from '../components/icons';
-import { LOGO_PATHS } from '../components/Logo';
+import { LOGO_URL } from '../components/Logo';
 import type { AchievementTier } from '../history/types';
 import { TIER_COLORS } from '../history/tiers';
 
@@ -36,9 +36,29 @@ type Ctx = CanvasRenderingContext2D;
 
 /** Garante que as fontes do jogo estejam prontas antes de desenhar. */
 export async function ensureFonts(): Promise<void> {
-  if (!document.fonts?.load) return;
   const specs = [`800 64px ${DISPLAY}`, `700 64px ${DISPLAY}`, `600 64px ${DISPLAY}`, `400 32px ${TEXT}`, `500 32px ${TEXT}`, `600 32px ${TEXT}`];
-  await Promise.all(specs.map((s) => document.fonts.load(s).catch(() => [])));
+  const fonts = document.fonts?.load ? specs.map((s) => document.fonts.load(s).catch(() => [])) : [];
+  await Promise.all([...fonts, ensureLogo()]);
+}
+
+let logoImage: HTMLImageElement | null = null;
+let logoLoading: Promise<void> | null = null;
+
+/** Carrega a logo uma vez; as artes esperam por ela antes de desenhar. */
+function ensureLogo(): Promise<void> {
+  logoLoading ??= new Promise<void>((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      logoImage = img;
+      resolve();
+    };
+    img.onerror = () => {
+      logoLoading = null; // tenta de novo na próxima arte
+      resolve();
+    };
+    img.src = LOGO_URL;
+  });
+  return logoLoading;
 }
 
 export function createCanvas(w = W, h = H): { canvas: HTMLCanvasElement; ctx: Ctx } {
@@ -240,42 +260,15 @@ export function drawCrest(ctx: Ctx, club: Club, x: number, y: number, width: num
   ctx.restore();
 }
 
-/** Emblema PRAG (escudo prateado, estrela dourada e o "11"). */
-export function drawLogoMark(ctx: Ctx, x: number, y: number, width: number): void {
-  const s = width / 100;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(s, s);
-  const silver = ctx.createLinearGradient(0, 0, 100, 112);
-  silver.addColorStop(0, '#ffffff');
-  silver.addColorStop(0.45, '#c3cad3');
-  silver.addColorStop(0.7, '#f4f6f9');
-  silver.addColorStop(1, '#8d97a5');
-  ctx.fillStyle = silver;
-  ctx.fill(new Path2D(LOGO_PATHS.outer));
-  const blue = ctx.createLinearGradient(0, 11, 0, 100);
-  blue.addColorStop(0, '#2563d6');
-  blue.addColorStop(1, '#0a1d47');
-  ctx.fillStyle = blue;
-  ctx.fill(new Path2D(LOGO_PATHS.inner));
-  const gold = goldGradient(ctx, 18, 90);
-  ctx.fillStyle = gold;
-  ctx.fill(new Path2D(LOGO_PATHS.star));
-  font(ctx, 800, 46);
-  spacing(ctx, -2);
-  ctx.textAlign = 'center';
-  ctx.fillText('11', 50, 82);
-  spacing(ctx, 0);
-  ctx.strokeStyle = 'rgba(34,197,94,0.9)';
-  ctx.lineWidth = 3;
-  ctx.lineCap = 'round';
-  ctx.stroke(new Path2D(LOGO_PATHS.smile));
-  ctx.restore();
+/** Logo oficial do PRAG Onze BR Lendário (PNG transparente, quadrado). */
+export function drawLogoMark(ctx: Ctx, x: number, y: number, size: number): void {
+  if (logoImage) ctx.drawImage(logoImage, x, y, size, size);
 }
 
 /** Cabeçalho padrão: emblema + "ONZE BR LENDÁRIO · PRAG". */
 export function drawBrand(ctx: Ctx, x: number, y: number, right?: string): void {
-  drawLogoMark(ctx, x, y, 70);
+  drawLogoMark(ctx, x, y - 4, 88);
+  x += 12;
   ctx.textAlign = 'left';
   font(ctx, 800, 40);
   spacing(ctx, 3);

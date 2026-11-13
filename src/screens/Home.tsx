@@ -114,7 +114,7 @@ export function Home() {
     <div className="page home">
       <section className="hero">
         <div className="hero-mark">
-          <LogoMark size={120} />
+          <LogoMark size={200} />
         </div>
         <div className="hero-copy">
           <div className="eyebrow">Futebol brasileiro · lendas · temporada perfeita</div>

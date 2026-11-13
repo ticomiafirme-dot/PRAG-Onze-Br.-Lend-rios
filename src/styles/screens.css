@@ -116,9 +116,9 @@
     text-align: left;
     gap: 10px;
   }
-  .hero-mark svg {
-    width: 76px;
-    height: auto;
+  .hero-mark .logo-mark {
+    width: 112px;
+    height: 112px;
   }
 }
 
