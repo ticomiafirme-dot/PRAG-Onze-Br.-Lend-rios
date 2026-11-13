@@ -9,7 +9,7 @@ export function canvasToPng(canvas: HTMLCanvasElement): Promise<Blob> {
 export function fileSlug(text: string): string {
   return text
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/\p{M}/gu, '')
     .replace(/[^A-Za-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
