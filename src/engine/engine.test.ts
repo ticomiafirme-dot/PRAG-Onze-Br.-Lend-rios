@@ -9,6 +9,7 @@ import { computeChemistry } from './chemistry';
 import { buildSheet } from './team';
 import { createCampaign, playDay, simulateRest, summarize, leagueStandings, USER_ID } from './campaign';
 import { Rng } from './rng';
+import { challengeFormations } from './challenges';
 import { POSITIONS, ROLE_CATEGORY, type Card, type Decade, type Position } from '../data/types';
 
 function autoDraft(clubId: string | null, formationId: FormationId, seed: number, mode: GameMode = 'classico', decade: Decade | null = null): DraftState {
@@ -168,6 +169,7 @@ describe('formações', () => {
       '3-5-2': [1, 3, 5, 2],
       '3-4-3': [1, 3, 4, 3],
       '4-1-4-1': [1, 4, 5, 1],
+      '4-2-4': [1, 4, 2, 4],
     };
     for (const f of FORMATIONS) {
       const n = formationCounts(f);
@@ -177,6 +179,30 @@ describe('formações', () => {
       const ids = new Set(f.slots.map((s) => s.id));
       for (const [a, b] of f.links) expect(ids.has(a) && ids.has(b), `${f.id} ${a}-${b}`).toBe(true);
     }
+  });
+});
+
+describe('4-2-4', () => {
+  it('draft completo com 4 atacantes e 2 meio-campistas, em qualquer clube', () => {
+    for (const c of LEAGUE_CLUBS) {
+      let st = createDraft(db, { mode: 'classico', clubId: c.id, decade: null, formationId: '4-2-4', seed: 7, rerolls: 5 });
+      while (!isDraftComplete(st)) {
+        const slot = slotsWithOffers(st)[0];
+        st = pick(db, st, st.draw!.offers[slot.pos]![0], slot.id);
+      }
+      const cats = Object.entries(st.picks).map(([slot]) => getFormation('4-2-4').slots.find((s) => s.id === slot)!.pos);
+      expect(cats.filter((p) => p === 'ATA').length, c.id).toBe(4);
+      expect(cats.filter((p) => p === 'MEI').length, c.id).toBe(2);
+    }
+  });
+
+  it('entra nos desafios só a partir de 14/11/2026 (diário) e da semana 47 (semanal)', () => {
+    expect(challengeFormations('day', '2026-11-13')).not.toContain('4-2-4');
+    expect(challengeFormations('day', '2026-11-14')).toContain('4-2-4');
+    expect(challengeFormations('week', '2026-W46')).not.toContain('4-2-4');
+    expect(challengeFormations('week', '2026-W47')).toContain('4-2-4');
+    // as demais formações seguem na mesma ordem (desafios já sorteados não mudam)
+    expect(challengeFormations('day', '2026-11-13')).toEqual(['4-3-3', '4-4-2', '4-2-3-1', '3-5-2', '4-1-4-1', '3-4-3']);
   });
 });
 

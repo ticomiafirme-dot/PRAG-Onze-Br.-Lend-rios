@@ -1,5 +1,6 @@
 import { BackLink } from '../components/ui';
 import { LINK_COLORS } from '../components/Pitch';
+import { FORMATIONS } from '../data/formations';
 import { TIER_LABEL } from '../components/PlayerCard';
 
 export function HowTo() {
@@ -18,7 +19,7 @@ export function HowTo() {
           <p>
             Escolha um dos 20 clubes do Brasileirão (ou um convidado dos estaduais). Na página do clube você vê as décadas em que ele fez
             história. Escolha <strong>Todas as décadas</strong> para o modo Clássico ou uma década específica para a <strong>Era Única</strong>.
-            Depois, escolha entre 6 formações: 4-3-3, 4-4-2, 4-2-3-1, 3-5-2, 4-1-4-1 e 3-4-3.
+            Depois, escolha entre {FORMATIONS.length} formações: {FORMATIONS.slice(0, -1).map((f) => f.name).join(', ')} e {FORMATIONS[FORMATIONS.length - 1].name}.
           </p>
         </section>
         <section className="panel">

@@ -8,7 +8,7 @@ Inspirado nas mecânicas de draft por sorteio do Perfect Season FC, com identida
 
 1. **Escolha o clube** — 20 clubes do Brasileirão (+ 4 convidados dos estaduais de PE e GO).
 2. **Escolha a década** — "Todas as décadas" (modo Clássico, com sorteio) ou uma era específica (Era Única).
-3. **Escolha a formação** — 4-3-3, 4-4-2, 4-2-3-1, 3-5-2, 4-1-4-1 ou 3-4-3 — e o nível dos rivais.
+3. **Escolha a formação** — 4-3-3, 4-4-2, 4-2-3-1, 3-5-2, 4-1-4-1, 3-4-3 ou 4-2-4 — e o nível dos rivais.
 4. **Draft** — a cada rodada uma década é sorteada; escolha um jogador dela para uma vaga livre. 11 rodadas, **5 novos sorteios**. Sem repetir jogador e sempre na categoria em que ele jogou de verdade.
 5. **Escalação e química** — ligações entre vizinhos por clube, década e nacionalidade. Jogadores da mesma categoria trocam de vaga livremente.
 6. **Capitão** — +3 de overall, faixa de capitão e química em dobro.
@@ -47,7 +47,7 @@ O progresso é salvo automaticamente no navegador (localStorage) e, com login, t
 | **MEI** — Meio-campistas | volantes, meias centrais, meias ofensivos |
 | **ATA** — Atacantes | centroavantes, pontas e segundos atacantes |
 
-Qualquer jogador de uma categoria ocupa qualquer vaga dela. Um jogador pertence às categorias da sua função principal e das secundárias registradas (ex.: lateral que também atuou no meio é DEF e MEI). Distribuição por formação: 4-3-3 (1/4/3/3), 4-4-2 (1/4/4/2), 4-2-3-1 (1/4/4/2), 3-5-2 (1/3/5/2), 4-1-4-1 (1/4/5/1) e 3-4-3 (1/3/4/3).
+Qualquer jogador de uma categoria ocupa qualquer vaga dela. Um jogador pertence às categorias da sua função principal e das secundárias registradas (ex.: lateral que também atuou no meio é DEF e MEI). Distribuição por formação: 4-3-3 (1/4/3/3), 4-4-2 (1/4/4/2), 4-2-3-1 (1/4/4/2), 3-5-2 (1/3/5/2), 4-1-4-1 (1/4/5/1), 3-4-3 (1/3/4/3) e 4-2-4 (1/4/2/4).
 
 ## Rodando
 

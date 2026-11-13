@@ -15,6 +15,7 @@ import { useAuth } from '../cloud/auth';
 import { cloudEnabled } from '../cloud/config';
 import { useHistory } from '../history/store';
 import { ACHIEVEMENT_DEFS } from '../history/achievements';
+import { FORMATIONS } from '../data/formations';
 import { readJSON, writeJSON } from '../state/storage';
 
 /** Entrada da conta na página inicial: Google ou visitante. */
@@ -175,7 +176,7 @@ export function Home() {
           <strong>1950–2020</strong> décadas verificadas
         </div>
         <div>
-          <strong>6</strong> formações táticas
+          <strong>{FORMATIONS.length}</strong> formações táticas
         </div>
       </section>
 

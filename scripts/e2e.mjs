@@ -67,6 +67,9 @@ async function run(label, contextOpts) {
   step('clube -> formação');
   await page.getByRole('button', { name: /Sortear décadas/i }).click();
   await page.waitForURL(/#formacao/);
+  const f424 = page.locator('.formation-card', { hasText: '4-2-4' });
+  if (!(await f424.waitFor({ timeout: 8000 }).then(() => true, () => false))) errors.push('formação 4-2-4 não aparece na escolha de formação');
+  else if (!/1\s*GOL[\s\S]*4\s*DEF[\s\S]*2\s*MEI[\s\S]*4\s*ATA/.test(await f424.textContent())) errors.push(`4-2-4 com distribuição errada: ${await f424.textContent()}`);
   await page.locator('.formation-card', { hasText: '4-3-3' }).click();
   await shot('04-formacao');
   await page.getByRole('button', { name: /Iniciar draft/i }).click();

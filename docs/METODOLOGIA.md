@@ -88,7 +88,7 @@ Química do time (0–100) = média ponderada das químicas individuais. Efeito 
 - Defesa: 80% média dos defensores + 20% volantes.
 - Meio-campo: média de volantes, meio-campistas e meias.
 - Ataque: 78% média dos atacantes + 22% meias.
-- Ajustes da formação (ex.: 3-4-3 +2 ataque / −1,5 defesa; 4-1-4-1 +1 meio / +1 defesa) e da química.
+- Ajustes da formação (ex.: 3-4-3 +2 ataque / −1,5 defesa; 4-1-4-1 +1 meio / +1 defesa; 4-2-4 +2 ataque / −1 meio / −1 defesa) e da química.
 
 ## 6. Motor de simulação
 

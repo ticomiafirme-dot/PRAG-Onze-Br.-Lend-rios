@@ -27,7 +27,7 @@ export interface Formation {
   style: { attack: number; midfield: number; defense: number };
 }
 
-export type FormationId = '4-3-3' | '4-4-2' | '4-2-3-1' | '3-5-2' | '4-1-4-1' | '3-4-3';
+export type FormationId = '4-3-3' | '4-4-2' | '4-2-3-1' | '3-5-2' | '4-1-4-1' | '3-4-3' | '4-2-4';
 
 const gk = (): Slot => ({ id: 'gol', pos: 'GOL', x: 50, y: 91, num: 1 });
 
@@ -251,6 +251,38 @@ export const FORMATIONS: Formation[] = [
       ['pd', 'ca'],
     ],
     style: { attack: 2, midfield: 0, defense: -1.5 },
+  },
+  {
+    id: '4-2-4',
+    name: '4-2-4',
+    tagline: 'Quatro na frente, à moda antiga',
+    description:
+      'Quatro defensores, dupla de meio-campo e quatro atacantes: dois pontas bem abertos e dois homens de área. O esquema da era de ouro do futebol brasileiro: ataque avassalador, mas o meio fica exposto.',
+    slots: [
+      ...back4(),
+      { id: 'vol', pos: 'MEI', x: 36, y: 56, num: 5 },
+      { id: 'mc', pos: 'MEI', x: 64, y: 52, num: 8 },
+      { id: 'pe', pos: 'ATA', x: 13, y: 24, num: 11 },
+      { id: 'sa', pos: 'ATA', x: 38, y: 16, num: 10 },
+      { id: 'ca', pos: 'ATA', x: 62, y: 14, num: 9 },
+      { id: 'pd', pos: 'ATA', x: 87, y: 24, num: 7 },
+    ],
+    links: [
+      ...back4Links,
+      ['vol', 'zag1'],
+      ['mc', 'zag2'],
+      ['vol', 'mc'],
+      ['le', 'vol'],
+      ['ld', 'mc'],
+      ['le', 'pe'],
+      ['ld', 'pd'],
+      ['vol', 'sa'],
+      ['mc', 'ca'],
+      ['pe', 'sa'],
+      ['sa', 'ca'],
+      ['ca', 'pd'],
+    ],
+    style: { attack: 2, midfield: -1, defense: -1 },
   },
 ];
 

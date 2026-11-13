@@ -35,10 +35,26 @@ export function brazilWeekKey(d: Date = new Date()): string {
   return `${date.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
 
+/**
+ * Formações que entraram no jogo depois: só participam dos desafios a partir
+ * destas datas, para que os desafios já sorteados continuem iguais para todos.
+ */
+const CHALLENGE_SINCE: Partial<Record<FormationId, { day: string; week: string }>> = {
+  '4-2-4': { day: '2026-11-14', week: '2026-W47' },
+};
+
+/** Formações sorteáveis no desafio do dia (AAAA-MM-DD) ou da semana (AAAA-Www). */
+export function challengeFormations(kind: 'day' | 'week', key: string): FormationId[] {
+  return FORMATIONS.map((f) => f.id).filter((id) => {
+    const since = CHALLENGE_SINCE[id];
+    return !since || key >= since[kind];
+  });
+}
+
 export function dailyChallenge(db: Database, leagueClubIds: string[], dateKey = brazilDateKey()): ChallengeConfig {
   const seed = hashString(`diario:${dateKey}`);
   const rng = new Rng(seed);
-  const all = FORMATIONS.map((f) => f.id);
+  const all = challengeFormations('day', dateKey);
   const options: { clubId: string; decade: Decade; formations: FormationId[] }[] = [];
   for (const clubId of leagueClubIds) {
     for (const d of db.decadesOf(clubId)) {
@@ -68,7 +84,7 @@ export function weeklyChallenge(leagueClubIds: string[], weekKey = brazilWeekKey
   const order = new Rng(hashString(`semanal-ordem:${year}`)).shuffle(leagueClubIds);
   const clubId = order[(w - 1) % order.length];
   const rng = new Rng(seed);
-  const formationId = rng.pick(FORMATIONS.map((f) => f.id));
+  const formationId = rng.pick(challengeFormations('week', weekKey));
   return {
     key: `semanal:${weekKey}`,
     kind: 'semanal',
