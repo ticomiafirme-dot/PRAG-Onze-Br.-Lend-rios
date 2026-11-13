@@ -11,10 +11,10 @@
 
 - Sidney Moraes: a infobox registra 97 jogos pela seleção brasileira, número incompatível com a carreira; a nota foi definida pela curadoria (77).
 
-## Fotos
+## Avatares
 
-- **Wikimedia Commons** — apenas imagens hospedadas no Commons (que exige licenças livres), a partir do campo de imagem da infobox. Autor e licença de cada foto ficam no próprio registro do jogador (`photo.author`, `photo.license`, `photo.page`) e são listados na tela **Fontes** do jogo.
-- Sem foto livre, o jogo mostra um avatar com as iniciais nas cores do clube.
+- O jogo não exibe fotos. Cada jogador tem avatares ilustrados originais, um por clube e época, gerados por código (veja [AVATARES.md](AVATARES.md)).
+- Os registros ainda guardam a referência de foto livre do Wikimedia Commons de cada jogador (`photo.url`, `photo.author`, `photo.license`, `photo.page`), mantida na base de dados, mas ela não aparece nas telas.
 
 ## Clubes e títulos
 

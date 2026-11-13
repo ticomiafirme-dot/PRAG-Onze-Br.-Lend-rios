@@ -4,7 +4,8 @@ import { useAuth } from '../cloud/auth';
 import { cloudEnabled } from '../cloud/config';
 import { navigate, toHash, useRoute } from '../router';
 import { resumeRoute, useGame } from '../state/store';
-import { GoogleButton, SignOutButton, SyncIndicator, UserAvatar } from './Account';
+import { GoogleButton, ProfileAvatar, SignOutButton, SyncIndicator, UserAvatar } from './Account';
+import { useProfileAvatar } from '../cloud/profile';
 import { Icon } from './Icon';
 import type { IconName } from './icons';
 
@@ -61,7 +62,10 @@ export function MainMenu({ onClose }: { onClose: () => void }) {
             </>
           ) : (
             <div className="stack" style={{ gap: 8 }}>
-              <strong>{status === 'expired' ? 'Sessão expirada' : 'Visitante'}</strong>
+              <span className="row" style={{ gap: 10 }}>
+                <ProfileAvatar size={44} />
+                <strong>{status === 'expired' ? 'Sessão expirada' : 'Visitante'}</strong>
+              </span>
               {cloudEnabled ? <GoogleButton label={status === 'expired' ? 'Entrar novamente' : 'Entrar com Google'} block /> : <span className="dim">Progresso salvo neste aparelho</span>}
             </div>
           )}
@@ -100,6 +104,17 @@ export function MainMenu({ onClose }: { onClose: () => void }) {
 }
 
 /** Lado direito do cabeçalho: foto e nome (logado) ou "Entrar com Google". */
+/** Foto de perfil do visitante no cabeçalho (quando ele escolheu um avatar). */
+function VisitorFace() {
+  const chosen = useProfileAvatar();
+  if (!chosen) return null;
+  return (
+    <a className="header-user" href="#perfil" aria-label="Meu Perfil">
+      <ProfileAvatar size={34} />
+    </a>
+  );
+}
+
 export function HeaderAccount({ onOpenMenu }: { onOpenMenu: () => void }) {
   const { status, user } = useAuth();
   if (status === 'signed-in' && user) {
@@ -117,6 +132,7 @@ export function HeaderAccount({ onOpenMenu }: { onOpenMenu: () => void }) {
   return (
     <div className="header-account header-login">
       <GoogleButton label="Entrar" />
+      <VisitorFace />
     </div>
   );
 }

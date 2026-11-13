@@ -11,6 +11,7 @@ import { Medal } from '../components/Medal';
 import { fmtDate, SeasonCrest, SeasonLineup, statusLabel } from '../components/SeasonViews';
 import { ShareModal } from '../share/ShareModal';
 import { headline, renderResultCard, resultFilename } from '../share/resultCard';
+import { PlayerFaceByKey } from '../components/PlayerFace';
 
 const COMP_LABEL: Record<MatchLine['comp'], string> = { brasileirao: 'Brasileirão', copa: 'Copa do Brasil', estadual: 'Estadual' };
 
@@ -293,7 +294,10 @@ export function Temporada({ id }: { id: string }) {
                       <tr key={p.personId}>
                         <td>{p.number}</td>
                         <td className="l">
-                          <strong>{p.name}</strong>
+                          <span className="face-cell">
+                            <PlayerFaceByKey cardKey={details.lineup.find((l) => l.personId === p.personId)?.cardKey} size={28} />
+                            <strong>{p.name}</strong>
+                          </span>
                         </td>
                         <td>{p.pos}</td>
                         <td>{p.games}</td>

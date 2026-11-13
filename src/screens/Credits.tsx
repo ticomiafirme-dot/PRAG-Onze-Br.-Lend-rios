@@ -1,24 +1,7 @@
-import { useMemo, useState } from 'react';
 import { CLUBS } from '../data/clubs';
-import { db } from '../data/db';
 import { BackLink } from '../components/ui';
 
 export function Credits() {
-  const [q, setQ] = useState('');
-  const photos = useMemo(() => {
-    const seen = new Set<string>();
-    const out: { name: string; url: string; author: string; license: string; page: string }[] = [];
-    for (const list of db.playersByClub.values()) {
-      for (const p of list) {
-        if (!p.photo || seen.has(p.photo.url)) continue;
-        seen.add(p.photo.url);
-        out.push({ name: p.name, url: p.photo.url, author: p.photo.author ?? '—', license: p.photo.license ?? '—', page: p.photo.page ?? '' });
-      }
-    }
-    return out.sort((a, b) => a.name.localeCompare(b.name));
-  }, []);
-  const filtered = photos.filter((p) => !q || p.name.toLowerCase().includes(q.toLowerCase()));
-
   return (
     <div className="page page-narrow">
       <div className="page-head">
@@ -77,19 +60,13 @@ export function Credits() {
           </ul>
         </section>
         <section className="panel">
-          <h2>Fotos ({photos.length})</h2>
+          <h2>Avatares dos jogadores</h2>
           <p className="muted">
-            Fotos hospedadas no Wikimedia Commons, que só aceita licenças livres. Autor e licença de cada imagem abaixo; clique para ver a página do
-            arquivo. Quando não há foto livre, o jogo mostra um avatar com as iniciais.
+            Os avatares são ilustrações originais do jogo, desenhadas por código em estilo vetorial. Não usam fotos. Cada jogador tem um avatar para cada
+            clube e época em que aparece, com a camisa daquele clube e a gola típica da década. Os personagens lembram traços gerais e públicos dos
+            jogadores mais conhecidos (cabelo, barba, faixa), sem reproduzir rostos reais; os demais recebem um visual gerado, coerente com a época. Os
+            escudos e uniformes são versões originais nas cores de cada clube.
           </p>
-          <input className="search" style={{ margin: '10px 0' }} placeholder="Buscar jogador…" value={q} onChange={(e) => setQ(e.target.value)} />
-          <div className="photo-credits">
-            {filtered.slice(0, 400).map((p) => (
-              <a key={p.url} href={p.page} target="_blank" rel="noreferrer">
-                <strong>{p.name}</strong> — {p.author} · {p.license}
-              </a>
-            ))}
-          </div>
         </section>
       </div>
     </div>

@@ -5,7 +5,9 @@ import { updateDisplayName } from '../cloud/session';
 import { ACHIEVEMENT_DEFS } from '../history/achievements';
 import { careerStats } from '../history/records';
 import { useHistory } from '../history/store';
-import { AccountBanner, GoogleButton, SignOutButton, SyncIndicator, UserAvatar } from '../components/Account';
+import { AccountBanner, GoogleButton, ProfileAvatar, SignOutButton, SyncIndicator } from '../components/Account';
+import { AvatarPicker } from '../components/AvatarPicker';
+import { useToast } from '../components/ui';
 import { fmtDate, SeasonCard } from '../components/SeasonViews';
 
 function Stat({ v, k }: { v: string | number; k: string }) {
@@ -24,6 +26,8 @@ export function Perfil() {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [toast, showToast] = useToast();
 
   if (status === 'loading') {
     return (
@@ -85,7 +89,12 @@ export function Perfil() {
       {!signedIn && <AccountBanner />}
 
       <section className="profile-card panel">
-        {signedIn ? <UserAvatar size={88} /> : <span className="user-avatar visitor" style={{ width: 88, height: 88, fontSize: 30 }}>V</span>}
+        <div className="profile-photo">
+          <ProfileAvatar size={96} />
+          <button className="btn btn-ghost btn-sm" onClick={() => setPicking(true)}>
+            Trocar foto
+          </button>
+        </div>
         <div className="profile-id">
           {signedIn ? (
             editing ? (
@@ -178,6 +187,8 @@ export function Perfil() {
           Hall dos Lendários
         </a>
       </nav>
+      {picking && <AvatarPicker onClose={() => setPicking(false)} onSaved={showToast} />}
+      {toast}
     </div>
   );
 }

@@ -95,3 +95,12 @@ export function loadPlayerName(): string {
 export function savePlayerName(name: string): void {
   writeJSON('player-name', name.slice(0, 24));
 }
+
+/** Avatar de jogador escolhido como foto de perfil do visitante (neste aparelho). */
+export function loadProfileAvatar(): string | null {
+  return readJSON<string | null>('profile-avatar', null);
+}
+
+export function saveProfileAvatar(key: string | null): void {
+  writeJSON('profile-avatar', key);
+}

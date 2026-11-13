@@ -20,13 +20,14 @@ function cleanAuthParams(): boolean {
   return true;
 }
 
-function userFrom(session: Session, profile?: { display_name: string; avatar_url: string | null; created_at: string } | null): AccountUser {
+function userFrom(session: Session, profile?: { display_name: string; avatar_url: string | null; created_at: string; game_avatar?: string | null } | null): AccountUser {
   const m = (session.user.user_metadata ?? {}) as Record<string, string | undefined>;
   return {
     id: session.user.id,
     email: session.user.email ?? null,
     name: profile?.display_name || m.full_name || m.name || session.user.email?.split('@')[0] || 'Jogador',
     avatarUrl: profile?.avatar_url ?? m.avatar_url ?? m.picture ?? null,
+    gameAvatar: profile?.game_avatar ?? null,
     createdAt: profile?.created_at ?? session.user.created_at ?? null,
   };
 }
@@ -136,6 +137,15 @@ export async function signOut(): Promise<void> {
 }
 
 /** Atualiza o nome de exibição do perfil. */
+/** Grava o avatar de jogador escolhido como foto de perfil da conta. */
+export async function updateGameAvatar(key: string | null): Promise<void> {
+  const sb = getSupabase();
+  const user = useAuth.getState().user;
+  if (!sb || !user) return;
+  await createRepo(sb, user.id).setGameAvatar(key);
+  useAuth.getState().set({ user: { ...user, gameAvatar: key } });
+}
+
 export async function updateDisplayName(name: string): Promise<void> {
   const sb = getSupabase();
   const user = useAuth.getState().user;

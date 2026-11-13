@@ -156,6 +156,47 @@
   background: #0b1a3f;
 }
 
+/* Avatar ilustrado do jogador */
+.pavatar {
+  display: inline-block;
+  flex: none;
+  border-radius: 50%;
+  vertical-align: middle;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.pavatar-custom {
+  position: relative;
+}
+
+.pavatar-custom img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pavatar-custom .pavatar-art {
+  inset: 5%;
+  width: 90%;
+  height: 90%;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.pavatar-empty {
+  background: radial-gradient(circle at 40% 35%, #2a3756, #141b2e);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+
+.face-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .avatar-fallback {
   display: grid;
   place-items: center;
@@ -326,11 +367,8 @@ button.pcard:hover:not(:disabled) {
   z-index: 1;
 }
 
-.pcard-photo .avatar-img,
-.pcard-photo .avatar-fallback {
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.7),
-    0 4px 10px rgba(0, 0, 0, 0.35);
+.pcard-photo .pavatar {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
 }
 
 .armband {
@@ -643,5 +681,162 @@ button.slot-empty {
 @keyframes confetti-fall {
   to {
     transform: translate3d(var(--dx), 110vh, 0) rotate(var(--rot));
+  }
+}
+
+/* ---------- Foto de perfil (avatar de jogador) ---------- */
+.user-avatar-face {
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.35));
+}
+
+.profile-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.modal.modal-wide {
+  width: min(980px, 100%);
+}
+
+.avatar-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.picker-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.picker-head h2 {
+  font-size: 28px;
+}
+
+.picker-preview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 12px 14px;
+}
+
+.picker-preview .grow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 160px;
+}
+
+.picker-preview-name {
+  font-family: var(--font-display);
+  font-size: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.picker-error {
+  color: #fca5a5;
+  font-size: 13px;
+}
+
+.picker-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.picker-filters .search,
+.picker-filters .select {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.picker-count {
+  font-size: 13px;
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px;
+}
+
+.picker-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px 8px;
+  border-radius: var(--radius-m, 12px);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition:
+    transform 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.picker-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 210, 58, 0.45);
+}
+
+.picker-item.is-selected {
+  border-color: #ffd23a;
+  background: rgba(255, 210, 58, 0.12);
+  box-shadow: 0 0 0 2px rgba(255, 210, 58, 0.35);
+}
+
+.picker-name {
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.15;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.picker-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.picker-more {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 2px;
+}
+
+@media (max-width: 640px) {
+  .picker-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .picker-filters .search {
+    grid-column: 1 / -1;
+  }
+
+  .picker-filters .btn-link {
+    grid-column: 1 / -1;
+    justify-self: start;
+    padding-left: 0;
+  }
+
+  .picker-grid {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   }
 }

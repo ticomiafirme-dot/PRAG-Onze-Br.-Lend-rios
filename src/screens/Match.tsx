@@ -9,6 +9,7 @@ import { POSITION_NAMES, toPosition } from '../data/types';
 import { TeamCrest } from '../components/TeamBadge';
 import { Confetti, NeedRun } from '../components/ui';
 import type { TeamSheet } from '../engine/team';
+import { PlayerFaceByKey } from '../components/PlayerFace';
 
 const MS_PER_MINUTE_1X = 600;
 const TICK_MS = 100;
@@ -324,6 +325,7 @@ function LineupList({ t, result, side, done }: { t: TeamSheet; result: MatchResu
           return (
             <div key={p.personId} className="lineup-row">
               <span className="num">{p.number}</span>
+              <PlayerFaceByKey cardKey={p.cardKey} size={30} />
               <span className="grow">
                 {p.name} {p.captain && <span className="cap-mini">C</span>}
                 <span className="dim"> · {POSITION_NAMES[toPosition(p.pos)]}</span>

@@ -6,6 +6,9 @@ import { cloudEnabled } from '../cloud/config';
 import { hasUnsyncedChanges, signInWithGoogle, signOut } from '../cloud/session';
 import { useSync } from '../cloud/syncState';
 import { Modal } from './ui';
+import { db } from '../data/db';
+import { useProfileAvatar } from '../cloud/profile';
+import { PlayerFace } from './PlayerFace';
 
 /** Logotipo "G" oficial do Google (quatro cores). */
 export function GoogleG({ size = 20 }: { size?: number }) {
@@ -101,7 +104,10 @@ export function SyncIndicator() {
 /** Foto da conta (do Google), com as iniciais enquanto carrega ou se falhar. */
 export function UserAvatar({ size = 36 }: { size?: number }) {
   const user = useAuth((s) => s.user);
+  const chosen = useProfileAvatar();
   const [failed, setFailed] = useState(false);
+  const card = chosen ? db.cardByKey.get(chosen) : undefined;
+  if (card) return <PlayerFace card={card} size={size} className="user-avatar-face" />;
   const initials = (user?.name ?? '?')
     .split(/\s+/)
     .filter(Boolean)
@@ -112,6 +118,20 @@ export function UserAvatar({ size = 36 }: { size?: number }) {
     <span className="user-avatar" style={{ width: size, height: size, fontSize: size * 0.4 }}>
       <span aria-hidden="true">{initials}</span>
       {user?.avatarUrl && !failed && <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setFailed(true)} />}
+    </span>
+  );
+}
+
+/** Foto de perfil da conta ou do visitante (avatar de jogador escolhido, foto do Google ou iniciais). */
+export function ProfileAvatar({ size = 36 }: { size?: number }) {
+  const status = useAuth((s) => s.status);
+  const chosen = useProfileAvatar();
+  const card = chosen ? db.cardByKey.get(chosen) : undefined;
+  if (status === 'signed-in') return <UserAvatar size={size} />;
+  if (card) return <PlayerFace card={card} size={size} className="user-avatar-face" />;
+  return (
+    <span className="user-avatar visitor" style={{ width: size, height: size, fontSize: size * 0.36 }}>
+      V
     </span>
   );
 }

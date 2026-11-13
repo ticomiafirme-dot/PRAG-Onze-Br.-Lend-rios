@@ -6,6 +6,7 @@ import { POSITION_NAMES, toPosition } from '../data/types';
 import { countsCleanSheet } from '../engine/match';
 import { TeamName } from '../components/TeamBadge';
 import { BackLink, NeedRun } from '../components/ui';
+import { PlayerFaceByKey } from '../components/PlayerFace';
 
 export function Stats() {
   const run = useGame((s) => s.run);
@@ -82,6 +83,8 @@ function StatsInner() {
   const comps: (CompId | 'all')[] = ['brasileirao', ...(c.estadual ? (['estadual'] as const) : []), ...(c.copa ? (['copa'] as const) : []), 'all'];
   const userTop = league.find((r) => r.team === USER_ID);
   const leagueTop = league[0];
+  /** Carta de cada jogador no time em que joga (para o avatar). */
+  const keyOf = (team: string, personId: string) => c.teams[team]?.players.find((p) => p.personId === personId)?.cardKey;
 
   return (
     <div className="page">
@@ -149,7 +152,10 @@ function StatsInner() {
                 <tr key={r.personId}>
                   <td>{r.number}</td>
                   <td className="l">
-                    <strong>{r.name}</strong>
+                    <span className="face-cell">
+                      <PlayerFaceByKey cardKey={keyOf(USER_ID, r.personId)} size={28} />
+                      <strong>{r.name}</strong>
+                    </span>
                   </td>
                   <td title={POSITION_NAMES[toPosition(r.pos)]}>{toPosition(r.pos)}</td>
                   <td>{r.games}</td>
@@ -201,7 +207,12 @@ function StatsInner() {
               {league.slice(0, 15).map((r, i) => (
                 <tr key={r.team + r.personId} className={r.team === USER_ID ? 'me' : ''}>
                   <td>{i + 1}</td>
-                  <td className="l">{r.name}</td>
+                  <td className="l">
+                    <span className="face-cell">
+                      <PlayerFaceByKey cardKey={keyOf(r.team, r.personId)} size={28} />
+                      {r.name}
+                    </span>
+                  </td>
                   <td className="l">
                     <TeamName team={c.teams[r.team]} short />
                   </td>

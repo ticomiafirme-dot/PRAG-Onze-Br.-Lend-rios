@@ -10,6 +10,8 @@ export interface CloudProfile {
   avatar_url: string | null;
   email: string | null;
   created_at: string;
+  /** Avatar de jogador escolhido como foto de perfil. */
+  game_avatar?: string | null;
 }
 
 export interface CloudSave {
@@ -76,7 +78,7 @@ const seasonRow = (uid: string, s: SeasonEntry, details: SeasonDetails | null) =
 export function createRepo(sb: SupabaseClient, uid: string) {
   return {
     async profile(): Promise<CloudProfile | null> {
-      return check(await sb.from('profiles').select('id, display_name, avatar_url, email, created_at').eq('id', uid).maybeSingle()) as CloudProfile | null;
+      return check(await sb.from('profiles').select('*').eq('id', uid).maybeSingle()) as CloudProfile | null;
     },
 
     /** Garante o perfil (o gatilho do banco cria no primeiro login; isto cobre bancos sem o gatilho). */
@@ -92,6 +94,10 @@ export function createRepo(sb: SupabaseClient, uid: string) {
         return { ...current, avatar_url: p.avatarUrl };
       }
       return current;
+    },
+
+    async setGameAvatar(key: string | null): Promise<void> {
+      check(await sb.from('profiles').update({ game_avatar: key }).eq('id', uid));
     },
 
     async setDisplayName(name: string): Promise<void> {

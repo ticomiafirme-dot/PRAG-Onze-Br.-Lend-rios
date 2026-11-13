@@ -120,7 +120,7 @@ export function useToast(): [ReactNode, (msg: string) => void] {
   return [node, setMsg];
 }
 
-export function Modal({ children, onClose, label }: { children: ReactNode; onClose: () => void; label: string }) {
+export function Modal({ children, onClose, label, className = '' }: { children: ReactNode; onClose: () => void; label: string; className?: string }) {
   useEffect(() => {
     const on = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', on);
@@ -129,7 +129,7 @@ export function Modal({ children, onClose, label }: { children: ReactNode; onClo
   // no corpo da página: animações e desfoques dos contêineres prenderiam a janela fixa
   return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={label} onClick={(e) => e.stopPropagation()}>
+      <div className={`modal ${className}`} role="dialog" aria-modal="true" aria-label={label} onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
     </div>,

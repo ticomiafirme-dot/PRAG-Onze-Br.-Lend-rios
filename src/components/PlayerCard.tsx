@@ -1,27 +1,12 @@
-import { useState } from 'react';
 import type { Card, Position } from '../data/types';
 import { decadeLabel, POSITION_NAMES } from '../data/types';
 import { CLUB_BY_ID } from '../data/clubs';
 import { Crest } from './Crest';
 import { Flag } from './Flag';
+import { PlayerFace } from './PlayerFace';
+import { tierOf, TIER_LABEL } from './cardTier';
 
-export type Tier = 'lenda' | 'idolo' | 'craque' | 'titular' | 'elenco';
-
-export function tierOf(ovr: number): Tier {
-  if (ovr >= 90) return 'lenda';
-  if (ovr >= 85) return 'idolo';
-  if (ovr >= 80) return 'craque';
-  if (ovr >= 75) return 'titular';
-  return 'elenco';
-}
-
-export const TIER_LABEL: Record<Tier, string> = {
-  lenda: 'Lenda',
-  idolo: 'Ídolo',
-  craque: 'Craque',
-  titular: 'Titular',
-  elenco: 'Elenco',
-};
+export { tierOf, TIER_LABEL, type Tier } from './cardTier';
 
 export function initials(name: string): string {
   const parts = name.replace(/\(.*\)/, '').trim().split(/\s+/).filter(Boolean);
@@ -29,41 +14,9 @@ export function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+/** Avatar ilustrado do jogador (clube e época da carta, fundo na cor da carta). */
 export function PlayerAvatar({ card, size = 64 }: { card: Card; size?: number }) {
-  const [failed, setFailed] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const club = CLUB_BY_ID[card.club];
-  const photo = card.player.photo?.url;
-  // As iniciais ficam sempre por baixo: aparecem enquanto a foto carrega ou se ela falhar.
-  return (
-    <span className="avatar-wrap" style={{ width: size, height: size }}>
-      <span
-        className="avatar-fallback"
-        style={{
-          width: size,
-          height: size,
-          background: `linear-gradient(145deg, ${club.colors.primary}, ${club.colors.secondary === '#ffffff' ? '#1b2c57' : club.colors.secondary})`,
-          fontSize: size * 0.36,
-        }}
-        aria-hidden="true"
-      >
-        {initials(card.player.name)}
-      </span>
-      {photo && !failed && (
-        <img
-          className={`avatar-img ${loaded ? 'is-loaded' : ''}`}
-          src={photo}
-          alt={card.player.name}
-          width={size}
-          height={size}
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          onError={() => setFailed(true)}
-          onLoad={() => setLoaded(true)}
-        />
-      )}
-    </span>
-  );
+  return <PlayerFace card={card} size={size} className="avatar-wrap" />;
 }
 
 interface Props {

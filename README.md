@@ -115,4 +115,4 @@ O backend das contas é o Supabase (Auth + Postgres com RLS), configurado por va
 
 ## Créditos
 
-Dados históricos: Wikipédia (pt/en). Fotos: Wikimedia Commons, com autor e licença na tela **Fontes** do jogo. Emblemas e identidade visual: originais. Projeto de fã, sem vínculo com clubes, federações ou com o Perfect Season FC.
+Dados históricos: Wikipédia (pt/en). Avatares dos jogadores, emblemas e identidade visual: originais, sem fotos (veja [docs/AVATARES.md](docs/AVATARES.md)). Projeto de fã, sem vínculo com clubes, federações ou com o Perfect Season FC.

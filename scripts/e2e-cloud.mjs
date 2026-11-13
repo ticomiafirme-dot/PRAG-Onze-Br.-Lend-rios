@@ -336,9 +336,26 @@ await A.shot('06-hall-sincronizado');
 await A.page.goto(BASE + '#conquistas');
 await A.page.waitForSelector('.ach-card.is-unlocked');
 
+// ---------- Foto de perfil com avatar de jogador, sincronizada entre aparelhos
+await A.page.goto(BASE + '#perfil');
+await A.page.getByRole('button', { name: 'Trocar foto' }).click();
+await A.page.getByLabel('Buscar jogador pelo nome').fill('zico');
+await A.page.getByLabel('Filtrar por clube').selectOption('flamengo');
+await A.page.getByLabel('Filtrar por década').selectOption('1980s');
+await A.page.locator('.avatar-picker .picker-item').first().click();
+await A.page.getByRole('button', { name: 'Usar este avatar' }).click();
+await A.page.waitForSelector('.avatar-picker', { state: 'detached' });
+const profileRow = backend.tables.profiles.find((p) => p.id === ACC.id);
+if (profileRow?.game_avatar !== 'zico@flamengo@1980s') errors.push(`foto de perfil não gravada na nuvem: ${profileRow?.game_avatar}`);
+await B.page.reload();
+await B.page.waitForSelector(".header-user .pavatar", { timeout: 15000 });
+const phoneAlt = await B.page.locator('.header-user .pavatar').getAttribute('alt');
+if (phoneAlt !== 'Zico') errors.push(`foto de perfil não chegou ao celular: ${phoneAlt}`);
+step('foto de perfil (avatar do Zico no Flamengo) salva na conta e vista no celular');
+
 // ---------- Sair da conta
 await A.page.locator('.menu-button').click();
-await A.page.getByRole('button', { name: /Sair da conta/i }).click();
+await A.page.getByRole('navigation', { name: 'Menu principal' }).getByRole('button', { name: /Sair da conta/i }).click();
 await A.page.waitForSelector('.header-login .btn-google', { timeout: 15000 });
 await A.page.goto(BASE + '#historico');
 await A.page.waitForSelector('.history-page');

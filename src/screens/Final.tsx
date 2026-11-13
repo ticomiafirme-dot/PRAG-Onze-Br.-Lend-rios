@@ -16,6 +16,7 @@ import { useHistory } from '../history/store';
 import { ShareModal } from '../share/ShareModal';
 import { renderResultCard, resultFilename } from '../share/resultCard';
 import { usePlayerName } from '../cloud/profile';
+import { PlayerFaceByKey } from '../components/PlayerFace';
 
 export function Final() {
   const run = useGame((s) => s.run);
@@ -182,12 +183,12 @@ function FinalInner() {
           <h2 className="section-title">Destaques</h2>
           {top && (
             <p>
-              Artilheiro do time: <strong>{top.name}</strong> — {top.goals} gols, {top.assists} assistências
+              <PlayerFaceByKey cardKey={c.teams[USER_ID].players.find((p) => p.personId === top.personId)?.cardKey} size={30} /> Artilheiro do time: <strong>{top.name}</strong> — {top.goals} gols, {top.assists} assistências
             </p>
           )}
           {best && best.games > 0 && (
             <p style={{ marginTop: 6 }}>
-              Melhor nota média: <strong>{best.name}</strong> ({best.rating.toFixed(2)})
+              <PlayerFaceByKey cardKey={c.teams[USER_ID].players.find((p) => p.personId === best.personId)?.cardKey} size={30} /> Melhor nota média: <strong>{best.name}</strong> ({best.rating.toFixed(2)})
             </p>
           )}
           {scorers[0] && (

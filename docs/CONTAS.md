@@ -8,7 +8,7 @@ Sem as variáveis de ambiente do Supabase, o jogo funciona inteiro como **visita
 
 | Dado | Onde | Quando |
 | --- | --- | --- |
-| Perfil (nome, foto, e-mail, data de entrada) | `profiles` | criado no primeiro login (gatilho no banco) |
+| Perfil (nome, foto, e-mail, data de entrada, avatar de jogador escolhido como foto) | `profiles` | criado no primeiro login (gatilho no banco); o avatar, ao escolher em Meu Perfil |
 | Partida em andamento (draft, clube, décadas, formação, jogadores, capitão, temporada, rodada, resultados, classificação, estatísticas) | `game_saves` (compactado) | automaticamente a cada mudança, ~1,5 s depois da última |
 | Temporadas (registro permanente com escalação, tabela, jogos e estatísticas) | `seasons` | ao começar, terminar ou abandonar a temporada |
 | Títulos | `titles` | assim que são conquistados |
@@ -23,7 +23,7 @@ Se o mesmo jogador tiver partidas diferentes em andamento na nuvem e no aparelho
 ### 1. Projeto no Supabase
 
 1. Crie um projeto em [supabase.com](https://supabase.com). A região São Paulo (`sa-east-1`) dá a menor latência no Brasil.
-2. Em **SQL Editor**, rode todo o arquivo [`supabase/migrations/20261113000000_contas.sql`](../supabase/migrations/20261113000000_contas.sql). Com a CLI, use `supabase link` e depois `supabase db push`.
+2. Em **SQL Editor**, rode os arquivos de `supabase/migrations/` em ordem: [`20261113000000_contas.sql`](../supabase/migrations/20261113000000_contas.sql) e depois [`20261114000000_avatar_perfil.sql`](../supabase/migrations/20261114000000_avatar_perfil.sql). Com a CLI, use `supabase link` e depois `supabase db push`.
 3. Em **Project Settings → API**, copie:
    - **Project URL**: `https://<ref>.supabase.co`
    - **anon / publishable key**: chave pública, que vai no frontend.
@@ -114,6 +114,7 @@ npx vite preview --outDir dist-cloud --port 4174
 | Arquivo | Papel |
 | --- | --- |
 | `supabase/migrations/20261113000000_contas.sql` | tabelas, relacionamentos, gatilhos e políticas RLS |
+| `supabase/migrations/20261114000000_avatar_perfil.sql` | foto de perfil (avatar de jogador) |
 | `src/cloud/config.ts` | lê as variáveis de ambiente |
 | `src/cloud/supabase.ts` | cliente Supabase (PKCE, sessão persistente) |
 | `src/cloud/session.ts` | login, retorno do Google, sessão, expiração e saída |

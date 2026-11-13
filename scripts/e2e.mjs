@@ -108,6 +108,9 @@ async function run(label, contextOpts) {
       const ovrs = (await page.locator('.offers .pcard-ovr-num').allTextContents()).map(Number);
       if (ovrs.some((v, i) => i > 0 && v > ovrs[i - 1])) errors.push(`aba TODOS fora de ordem: ${ovrs.join(',')}`);
     }
+    // avatares ilustrados em todas as cartas, carregados (sem imagem quebrada)
+    const faces = await page.$$eval('.offers .pcard .pavatar', (imgs) => imgs.map((i) => ({ ok: i.complete && i.naturalWidth > 0, svg: (i.getAttribute('src') ?? '').startsWith('data:image/svg+xml') })));
+    if (!faces.length || faces.some((f) => !f.ok || !f.svg)) errors.push(`avatares das cartas do draft: ${JSON.stringify(faces.slice(0, 3))}`);
     await card.click();
     await page.waitForTimeout(150);
     if (target) {
@@ -231,6 +234,32 @@ async function run(label, contextOpts) {
   await page.goto(BASE + '#hall');
   await page.waitForSelector('.hall-title');
   await shot('15c-hall');
+
+  step('foto de perfil');
+  await page.goto(BASE + '#perfil');
+  await page.getByRole('button', { name: 'Trocar foto' }).click();
+  await page.waitForSelector('.avatar-picker .picker-item');
+  const total = await page.locator('.picker-count').textContent();
+  await page.getByLabel('Buscar jogador pelo nome').fill('socrates');
+  await page.getByLabel('Filtrar por clube').selectOption('flamengo');
+  await page.waitForFunction(() => document.querySelectorAll('.avatar-picker .picker-item').length === 1);
+  const only = await page.locator('.avatar-picker .picker-item').first().textContent();
+  if (!/Sócrates/.test(only) || !/FLA/.test(only)) errors.push(`filtro nome + clube: "${only}" (total antes: ${total})`);
+  await page.getByLabel('Filtrar por clube').selectOption('');
+  await page.getByLabel('Filtrar por década').selectOption('1980s');
+  const decadeItems = await page.locator('.avatar-picker .picker-item .picker-meta').allTextContents();
+  if (!decadeItems.length || decadeItems.some((t) => !t.trim().endsWith('80'))) errors.push(`filtro por década: ${decadeItems.join(' | ')}`);
+  await page.locator('.avatar-picker .picker-item', { hasText: 'COR' }).first().click();
+  await shot('17-foto-de-perfil');
+  await page.getByRole('button', { name: 'Usar este avatar' }).click();
+  await page.waitForSelector('.avatar-picker', { state: 'detached' });
+  const photo = await page.locator('.profile-photo .pavatar').getAttribute('src');
+  if (!photo?.startsWith('data:image/svg+xml')) errors.push('foto de perfil não mostra o avatar escolhido');
+  await page.reload();
+  await page.waitForSelector('.profile-photo .pavatar');
+  const kept = await page.locator('.profile-photo .pavatar').getAttribute('alt');
+  if (!/Sócrates/.test(kept ?? '')) errors.push(`foto de perfil não persistiu: ${kept}`);
+  if (label === 'desktop' && !(await page.locator('.header .header-user .pavatar').count())) errors.push('foto de perfil não aparece no cabeçalho');
   await page.reload();
   await page.goto(BASE + '#historico');
   await page.waitForSelector('.season-card');

@@ -56,7 +56,10 @@ beforeAll(async () => {
     grant execute on function auth.uid() to anon, authenticated;
     alter default privileges in schema public grant all on tables to anon, authenticated;
   `);
-  await db.exec(fs.readFileSync('supabase/migrations/20261113000000_contas.sql', 'utf8'));
+  // todas as migrações, na ordem
+  for (const file of fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).sort()) {
+    await db.exec(fs.readFileSync(`supabase/migrations/${file}`, 'utf8'));
+  }
   await db.query(
     `insert into auth.users (id, email, raw_user_meta_data) values ($1, 'a@exemplo.com', '{"full_name":"Jogador A","avatar_url":"https://exemplo.com/a.png"}'), ($2, 'b@exemplo.com', '{"name":"Jogador B"}')`,
     [A, B],
@@ -69,6 +72,16 @@ describe('esquema e segurança (RLS)', () => {
     expect(r.rows).toEqual([{ display_name: 'Jogador A', avatar_url: 'https://exemplo.com/a.png', email: 'a@exemplo.com' }]);
     const rb = await as(B, 'select display_name from public.profiles');
     expect(rb.rows).toEqual([{ display_name: 'Jogador B' }]);
+  });
+
+  it('foto de perfil: cada um escolhe o próprio avatar de jogador, no formato da carta', async () => {
+    await as(A, `update public.profiles set game_avatar = 'pele@santos@1960s'`);
+    expect((await as(A, 'select game_avatar from public.profiles')).rows).toEqual([{ game_avatar: 'pele@santos@1960s' }]);
+    await expect(as(A, `update public.profiles set game_avatar = '<script>'`)).rejects.toThrow(/profiles_game_avatar_format/);
+    // B não altera o perfil de A (a política só enxerga a própria linha)
+    await as(B, `update public.profiles set game_avatar = 'zico@flamengo@1980s' where id = '${A}'`);
+    expect((await as(A, 'select game_avatar from public.profiles')).rows).toEqual([{ game_avatar: 'pele@santos@1960s' }]);
+    await as(A, `update public.profiles set game_avatar = null`);
   });
 
   it('visitante sem login não acessa nada', async () => {

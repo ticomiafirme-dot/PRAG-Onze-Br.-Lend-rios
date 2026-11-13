@@ -7,6 +7,7 @@ import { navigate } from '../router';
 import { lineupOf, useGame } from '../state/store';
 import { PlayerCard } from '../components/PlayerCard';
 import { BackLink, NeedRun, chemColor } from '../components/ui';
+import { PlayerFace } from '../components/PlayerFace';
 
 export function Captain() {
   const run = useGame((s) => s.run);
@@ -64,6 +65,7 @@ function CaptainInner() {
       <div className="panel captain-summary">
         {cap ? (
           <>
+            <PlayerFace card={cap} size={84} />
             <div>
               <div className="eyebrow">Capitão escolhido</div>
               <h2>{cap.player.name}</h2>
