@@ -6,6 +6,7 @@ import { brazilDateKey, brazilWeekKey } from '../engine/challenges';
 import { Crest } from '../components/Crest';
 import { LogoMark } from '../components/Logo';
 import { BackLink } from '../components/ui';
+import { useAuth } from '../cloud/auth';
 
 type Filter = 'geral' | 'diario' | 'semanal' | 'classico' | 'era' | 'mistura' | 'triplice';
 type Scope = 'shared' | 'local';
@@ -27,6 +28,13 @@ export function Ranking() {
   const [sharedOn, setSharedOn] = useState(false);
   const [shared, setShared] = useState<SharedEntry[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
+  const me = useAuth((s) => (s.status === 'signed-in' ? s.user : null));
+  /** Nome exibido numa campanha deste aparelho: o nick atual da conta, quando é de quem está conectado. */
+  const localName = (e: RankingEntry): string => {
+    if (me && e.accountId === me.id) return me.name;
+    if (me && !e.accountId && (!e.playerName || e.playerName === 'Anônimo')) return me.name;
+    return e.playerName || 'Anônimo';
+  };
   const [status, setStatus] = useState<Status>('idle');
   const local = useMemo(() => loadRanking(), []);
 
@@ -141,7 +149,7 @@ export function Ranking() {
             </thead>
             <tbody>
               {list.slice(0, 200).map((e, i) => (
-                <Row key={`${e.uid ?? 'local'}-${e.id}`} e={e} i={i} who={e.uid ? (names[e.uid] ?? 'Jogador') : e.playerName || 'Anônimo'} />
+                <Row key={`${e.uid ?? 'local'}-${e.id}`} e={e} i={i} who={e.uid ? (names[e.uid] ?? 'Jogador') : localName(e)} />
               ))}
             </tbody>
           </table>

@@ -18,6 +18,7 @@ import { renderResultCard, resultFilename } from '../share/resultCard';
 import { usePlayerName } from '../cloud/profile';
 import { PlayerFaceByKey } from '../components/PlayerFace';
 import { hasLineup, lineupFilename, lineupText, renderLineupCard } from '../share/lineupCard';
+import { useAuth } from '../cloud/auth';
 
 export function Final() {
   const run = useGame((s) => s.run);
@@ -45,6 +46,7 @@ function FinalInner() {
   const stored = useHistory((h) => h.data.seasons.find((x) => x.runId === run.id));
   const record = useMemo(() => buildSeasonRecord(run, 'finished'), [run]);
   const playerName = usePlayerName();
+  const accountName = useAuth((st) => (st.status === 'signed-in' ? st.user?.name ?? null : null));
   const players = userPlayerStats(c);
   const top = [...players].sort((a, b) => b.goals - a.goals)[0];
   const best = [...players].sort((a, b) => b.rating - a.rating)[0];
@@ -198,15 +200,22 @@ function FinalInner() {
             </p>
           )}
           <div className="divider" />
-          <label className="stack" style={{ gap: 6 }}>
-            <span className="dim">Seu nome no ranking</span>
-            <span className="row">
-              <input className="search grow" value={name} maxLength={24} onChange={(e) => setName(e.target.value)} placeholder="Anônimo" />
-              <button className="btn btn-ghost btn-sm" onClick={saveName}>
-                Salvar
-              </button>
-            </span>
-          </label>
+{accountName ? (
+            <p className="dim">
+              No ranking como <strong style={{ color: 'var(--text-1, #fff)' }}>{accountName}</strong>, o nick da sua conta. Para trocar, edite o nome em{' '}
+              <a href="#perfil">Meu Perfil</a>.
+            </p>
+          ) : (
+            <label className="stack" style={{ gap: 6 }}>
+              <span className="dim">Seu nome no ranking</span>
+              <span className="row">
+                <input className="search grow" value={name} maxLength={24} onChange={(e) => setName(e.target.value)} placeholder="Anônimo" />
+                <button className="btn btn-ghost btn-sm" onClick={saveName}>
+                  Salvar
+                </button>
+              </span>
+            </label>
+          )}
         </div>
       </div>
 

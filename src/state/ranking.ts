@@ -5,8 +5,16 @@ import { addRankingEntry, loadPlayerName, type RankingEntry } from './storage';
 import { MODE_INFO } from './modes';
 import { submitShared } from './sharedRanking';
 import type { Run } from './store';
+import { useAuth } from '../cloud/auth';
 
-export function buildRankingEntry(run: Run, playerName = loadPlayerName()): RankingEntry | null {
+/** Nome no ranking: o nick da conta, quando conectado; senão, o salvo neste aparelho. */
+export function rankingName(): string {
+  const auth = useAuth.getState();
+  if (auth.status === 'signed-in' && auth.user?.name) return auth.user.name;
+  return loadPlayerName();
+}
+
+export function buildRankingEntry(run: Run, playerName = rankingName()): RankingEntry | null {
   const c = run.campaign;
   if (!c?.finished || !run.captainSlot || !run.draft) return null;
   const s = summarize(c);
@@ -36,6 +44,7 @@ export function buildRankingEntry(run: Run, playerName = loadPlayerName()): Rank
     chem: user.chem,
     captain: captain.player.name,
     playerName: playerName || 'Anônimo',
+    accountId: useAuth.getState().status === 'signed-in' ? (useAuth.getState().user?.id ?? null) : null,
   };
 }
 

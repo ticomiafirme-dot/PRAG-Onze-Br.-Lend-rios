@@ -47,6 +47,8 @@ export interface RankingEntry {
   overall: number;
   chem: number;
   captain: string;
+  /** Conta (Supabase) de quem jogou, quando conectado: o nome exibido é o atual da conta. */
+  accountId?: string | null;
   playerName: string;
 }
 
