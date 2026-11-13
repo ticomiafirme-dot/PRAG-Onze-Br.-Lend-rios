@@ -1687,3 +1687,10 @@ tr.is-user td {
 .auth-error-bar span {
   flex: 1;
 }
+
+.home-privacy {
+  font-size: 12px;
+  color: var(--text-3, #8796b5);
+  text-decoration: underline;
+  align-self: flex-start;
+}

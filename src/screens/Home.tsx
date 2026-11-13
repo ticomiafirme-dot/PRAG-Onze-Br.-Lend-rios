@@ -48,6 +48,9 @@ function HomeAccount() {
       <div className="grow">
         <strong>{status === 'expired' ? 'Sua sessão expirou' : 'Salve sua trajetória'}</strong>
         <span className="dim">Entre com Google para guardar progresso, histórico, conquistas e recordes na nuvem e jogar em qualquer dispositivo.</span>
+        <a className="home-privacy" href="./privacidade.html">
+          Política de Privacidade
+        </a>
       </div>
       <div className="home-account-actions">
         <GoogleButton />

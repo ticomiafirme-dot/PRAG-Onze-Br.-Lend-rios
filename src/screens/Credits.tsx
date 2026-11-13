@@ -13,6 +13,13 @@ export function Credits() {
       </div>
       <div className="stack prose">
         <section className="panel">
+          <h2>Privacidade</h2>
+          <p>
+            Como visitante, nada sai do seu aparelho. Ao entrar com Google, o jogo guarda só o necessário para salvar o seu progresso. Veja a{' '}
+            <a href="./privacidade.html">Política de Privacidade</a>.
+          </p>
+        </section>
+        <section className="panel">
           <h2>Dados históricos</h2>
           <p>
             As passagens dos jogadores pelos clubes (anos, jogos e gols) foram extraídas das infobox dos artigos da{' '}
