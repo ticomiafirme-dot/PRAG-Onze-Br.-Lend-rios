@@ -7,6 +7,8 @@ import { Crest } from '../components/Crest';
 import { LogoMark } from '../components/Logo';
 import { BackLink } from '../components/ui';
 import { useAuth } from '../cloud/auth';
+import { StaffBadge, UserAvatar } from '../components/Account';
+import { PlayerFaceByKey } from '../components/PlayerFace';
 
 type Filter = 'geral' | 'diario' | 'semanal' | 'classico' | 'era' | 'mistura' | 'triplice';
 type Scope = 'shared' | 'local';
@@ -30,11 +32,8 @@ export function Ranking() {
   const [names, setNames] = useState<Record<string, string>>({});
   const me = useAuth((s) => (s.status === 'signed-in' ? s.user : null));
   /** Nome exibido numa campanha deste aparelho: o nick atual da conta, quando é de quem está conectado. */
-  const localName = (e: RankingEntry): string => {
-    if (me && e.accountId === me.id) return me.name;
-    if (me && !e.accountId && (!e.playerName || e.playerName === 'Anônimo')) return me.name;
-    return e.playerName || 'Anônimo';
-  };
+  const isMine = (e: RankingEntry): boolean => !!me && (e.accountId === me.id || (!e.accountId && (!e.playerName || e.playerName === 'Anônimo')));
+  const localName = (e: RankingEntry): string => (isMine(e) && me ? me.name : e.playerName || 'Anônimo');
   const [status, setStatus] = useState<Status>('idle');
   const local = useMemo(() => loadRanking(), []);
 
@@ -149,7 +148,7 @@ export function Ranking() {
             </thead>
             <tbody>
               {list.slice(0, 200).map((e, i) => (
-                <Row key={`${e.uid ?? 'local'}-${e.id}`} e={e} i={i} who={e.uid ? (names[e.uid] ?? 'Jogador') : localName(e)} />
+                <Row key={`${e.uid ?? 'local'}-${e.id}`} e={e} i={i} who={e.uid ? (names[e.uid] ?? 'Jogador') : localName(e)} mine={!e.uid && isMine(e)} />
               ))}
             </tbody>
           </table>
@@ -159,13 +158,19 @@ export function Ranking() {
   );
 }
 
-function Row({ e, i, who }: { e: RankingEntry; i: number; who: string }) {
+function Row({ e, i, who, mine }: { e: RankingEntry; i: number; who: string; mine: boolean }) {
   const club = e.clubId ? CLUB_BY_ID[e.clubId] : null;
   return (
     <tr>
       <td className="stat-num">{i + 1}</td>
       <td className="l">
-        <strong>{who}</strong>
+        <span className="rank-who">
+          {mine ? <UserAvatar size={34} /> : <PlayerFaceByKey cardKey={e.avatar} size={34} />}
+          <span className="rank-who-name">
+            <strong>{who}</strong>
+            {mine && <StaffBadge small />}
+          </span>
+        </span>
       </td>
       <td className="l">
         <span className="team-name">

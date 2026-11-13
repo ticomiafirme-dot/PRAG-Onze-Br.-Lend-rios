@@ -1,7 +1,7 @@
 // Monta a entrada de ranking de uma campanha encerrada.
 import { db } from '../data/db';
 import { summarize, USER_ID } from '../engine/campaign';
-import { addRankingEntry, loadPlayerName, type RankingEntry } from './storage';
+import { addRankingEntry, loadPlayerName, loadProfileAvatar, type RankingEntry } from './storage';
 import { MODE_INFO } from './modes';
 import { submitShared } from './sharedRanking';
 import type { Run } from './store';
@@ -45,6 +45,7 @@ export function buildRankingEntry(run: Run, playerName = rankingName()): Ranking
     captain: captain.player.name,
     playerName: playerName || 'Anônimo',
     accountId: useAuth.getState().status === 'signed-in' ? (useAuth.getState().user?.id ?? null) : null,
+    avatar: useAuth.getState().status === 'signed-in' ? (useAuth.getState().user?.gameAvatar ?? null) : loadProfileAvatar(),
   };
 }
 

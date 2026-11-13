@@ -49,6 +49,8 @@ export interface RankingEntry {
   captain: string;
   /** Conta (Supabase) de quem jogou, quando conectado: o nome exibido é o atual da conta. */
   accountId?: string | null;
+  /** Avatar de jogador usado como foto de perfil quando a campanha terminou. */
+  avatar?: string | null;
   playerName: string;
 }
 
