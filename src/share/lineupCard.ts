@@ -18,6 +18,7 @@ export interface LineupCardInput {
   details: SeasonDetails | null;
   /** Nome do jogador (perfil), se houver. */
   playerName?: string | null;
+  playerRole?: string | null;
 }
 
 type Ctx = CanvasRenderingContext2D;
@@ -308,7 +309,7 @@ function drawPlayer(ctx: Ctx, l: LineupEntry, face: Face | undefined, px: number
 // ------------------------------------------------------------------ arte
 
 export async function renderLineupCard(input: LineupCardInput, opts: { avatars?: boolean } = {}): Promise<HTMLCanvasElement> {
-  const { season: s, details: d, playerName } = input;
+  const { season: s, details: d, playerName, playerRole } = input;
   if (!hasLineup(d)) throw new Error('Esta temporada não tem a escalação registrada.');
   await ensureFonts();
   const faces = opts.avatars === false ? new Map<string, Face>() : await loadFaces(d.lineup);
@@ -338,7 +339,7 @@ export async function renderLineupCard(input: LineupCardInput, opts: { avatars?:
   if (playerName) {
     font(ctx, 600, 22);
     ctx.fillStyle = C.text2;
-    ctx.fillText(ellipsis(ctx, `TÉCNICO: ${playerName.toUpperCase()}`, tw), tx, ty + 128);
+    ctx.fillText(ellipsis(ctx, `${(playerRole || 'Técnico').toUpperCase()}: ${playerName.toUpperCase()}`, tw), tx, ty + 128);
   }
   spacing(ctx, 0);
 

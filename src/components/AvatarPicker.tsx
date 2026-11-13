@@ -8,6 +8,8 @@ import { setProfileAvatar, useProfileAvatar } from '../cloud/profile';
 import { Crest } from './Crest';
 import { PlayerFace } from './PlayerFace';
 import { Modal } from './ui';
+import { useAuth } from '../cloud/auth';
+import { isOwnerAvatar, OWNER_AVATAR_KEY, OWNER_AVATAR_LABEL, ownerAvatarUrl } from '../avatars/owner';
 
 const PAGE = 48;
 
@@ -52,6 +54,8 @@ export function AvatarPicker({ onClose, onSaved }: { onClose: () => void; onSave
   const results = useMemo(() => filterAvatarCards(allAvatarCards(), { query, club, decade }), [query, club, decade]);
   const decades = club ? DECADES.filter((d) => CLUB_BY_ID[club]?.decades.includes(d)) : DECADES;
   const chosen = db.cardMaybe(selected);
+  const title = useAuth((st) => (st.status === 'signed-in' ? (st.user?.title ?? null) : null));
+  const ownerSelected = !!title && isOwnerAvatar(selected);
   const filtered = Boolean(query || club || decade);
 
   const update = (fn: () => void) => {
@@ -86,9 +90,22 @@ export function AvatarPicker({ onClose, onSaved }: { onClose: () => void; onSave
       </div>
 
       <div className="picker-preview panel">
-        {chosen ? <PlayerFace card={chosen} size={84} /> : <span className="user-avatar visitor" style={{ width: 84, height: 84, fontSize: 28 }}>?</span>}
+        {ownerSelected ? (
+          <img className="pavatar" src={ownerAvatarUrl()} width={84} height={84} alt={OWNER_AVATAR_LABEL} />
+        ) : chosen ? (
+          <PlayerFace card={chosen} size={84} />
+        ) : (
+          <span className="user-avatar visitor" style={{ width: 84, height: 84, fontSize: 28 }}>
+            ?
+          </span>
+        )}
         <div className="grow">
-          {chosen ? (
+          {ownerSelected ? (
+            <>
+              <strong className="picker-preview-name">{OWNER_AVATAR_LABEL}</strong>
+              <span className="muted">Avatar exclusivo do fundador do jogo</span>
+            </>
+          ) : chosen ? (
             <>
               <strong className="picker-preview-name">{chosen.player.name}</strong>
               <span className="muted">
@@ -167,6 +184,16 @@ export function AvatarPicker({ onClose, onSaved }: { onClose: () => void; onSave
         {results.length === 0 ? 'Nenhum jogador encontrado com esses filtros.' : `${results.length.toLocaleString('pt-BR')} ${results.length === 1 ? 'avatar' : 'avatares'}`}
       </p>
 
+      {title && (
+        <div className="picker-exclusive">
+          <span className="eyebrow">Exclusivo do {title.toLowerCase()}</span>
+          <button className={`picker-item is-exclusive ${ownerSelected ? 'is-selected' : ''}`} onClick={() => setSelected(OWNER_AVATAR_KEY)} aria-pressed={ownerSelected} title="Avatar exclusivo do fundador">
+            <img className="pavatar" src={ownerAvatarUrl()} width={72} height={72} alt="" />
+            <span className="picker-name">{OWNER_AVATAR_LABEL}</span>
+            <span className="picker-meta">Só na sua conta</span>
+          </button>
+        </div>
+      )}
       <div className="picker-grid">
         {results.slice(0, limit).map((c) => {
           const cl = CLUB_BY_ID[c.club];

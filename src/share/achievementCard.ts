@@ -9,13 +9,14 @@ export interface AchievementCardInput {
   unlock: UnlockRecord;
   season: SeasonEntry | null;
   playerName?: string | null;
+  playerRole?: string | null;
 }
 
 export function achievementFilename(u: UnlockRecord): string {
   return `PRAG-Conquista-${fileSlug(u.name)}.png`;
 }
 
-export async function renderAchievementCard({ unlock, season, playerName }: AchievementCardInput): Promise<HTMLCanvasElement> {
+export async function renderAchievementCard({ unlock, season, playerName, playerRole }: AchievementCardInput): Promise<HTMLCanvasElement> {
   await ensureFonts();
   const { canvas, ctx } = createCanvas();
   const def = ACHIEVEMENT_BY_ID[unlock.id];
@@ -86,7 +87,7 @@ export async function renderAchievementCard({ unlock, season, playerName }: Achi
   // contexto
   const ctxLine = [
     season ? `${season.teamName}${decadesLabel(season) ? ` · ${decadesLabel(season)}` : ''} · ${season.formationId}` : null,
-    playerName ? `Técnico: ${playerName}` : null,
+    playerName ? `${playerRole || 'Técnico'}: ${playerName}` : null,
   ]
     .filter(Boolean)
     .join('   ·   ');

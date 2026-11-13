@@ -169,6 +169,24 @@ describe('nome de exibição único', () => {
   });
 });
 
+describe('títulos especiais (PRESIDENTE)', () => {
+  it('só o dono do banco concede títulos; jogadores leem, mas não se dão um título', async () => {
+    await db.query(`insert into public.staff (user_id, title) values ($1, 'Presidente')`, [A]);
+    expect((await as(B, `select title from public.staff where user_id = $1`, [A])).rows).toEqual([{ title: 'Presidente' }]);
+    await expect(as(B, `insert into public.staff (user_id, title) values ($1, 'Presidente')`, [B])).rejects.toThrow(/permission denied/);
+    await expect(as(A, `update public.staff set title = 'Rei' where user_id = $1`, [A])).rejects.toThrow(/permission denied/);
+    await expect(as(B, `delete from public.staff where user_id = $1`, [A])).rejects.toThrow(/permission denied/);
+    await expect(as(null, 'select * from public.staff')).rejects.toThrow(/permission denied/);
+  });
+
+  it('o avatar exclusivo do fundador só vale para quem tem título especial', async () => {
+    await as(A, `update public.profiles set game_avatar = 'presidente@prag@2020s' where id = $1`, [A]);
+    expect((await as(A, 'select game_avatar from public.profiles')).rows).toEqual([{ game_avatar: 'presidente@prag@2020s' }]);
+    await expect(as(B, `update public.profiles set game_avatar = 'presidente@prag@2020s' where id = $1`, [B])).rejects.toThrow(/exclusivo do fundador/);
+    await as(A, `update public.profiles set game_avatar = null where id = $1`, [A]);
+  });
+});
+
 describe('instalação em um passo', () => {
   it('supabase/instalar.sql traz todas as migrações, na ordem', () => {
     const all = fs.readFileSync('supabase/instalar.sql', 'utf8');

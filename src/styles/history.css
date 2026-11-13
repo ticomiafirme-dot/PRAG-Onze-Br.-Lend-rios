@@ -1734,3 +1734,63 @@ tr.is-user td {
   flex-direction: column;
   gap: 2px;
 }
+
+/* tag especial do fundador (PRESIDENTE) */
+.staff-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fff1a8 0%, #ffcf1f 35%, #d99a00 70%, #ffe680 100%);
+  color: #1a1300;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  vertical-align: middle;
+  white-space: nowrap;
+  box-shadow:
+    0 0 0 1px rgba(26, 19, 0, 0.35),
+    0 0 14px rgba(255, 207, 31, 0.45);
+  position: relative;
+  overflow: hidden;
+}
+
+.staff-badge::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.75) 50%, transparent 58%);
+  animation: staff-shine 3.2s ease-in-out infinite;
+}
+
+.staff-badge.is-small {
+  font-size: 10px;
+  padding: 2px 7px 2px 5px;
+  gap: 3px;
+}
+
+@keyframes staff-shine {
+  0%,
+  60% {
+    transform: translateX(-60%);
+  }
+  100% {
+    transform: translateX(60%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .staff-badge::after {
+    animation: none;
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .header-user .staff-badge {
+    display: none;
+  }
+}

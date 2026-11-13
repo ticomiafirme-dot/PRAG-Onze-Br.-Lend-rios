@@ -61,7 +61,8 @@ async function onSession(session: Session | null, fromRedirect: boolean): Promis
       name: m.full_name || m.name || session.user.email?.split('@')[0] || 'Jogador',
       email: session.user.email ?? null,
     });
-    auth.set({ user: userFrom(session, profile) });
+    const title = await repo.staffTitle().catch(() => null);
+    auth.set({ user: { ...userFrom(session, profile), title } });
   } catch {
     /* perfil será lido de novo na próxima sincronização */
   }

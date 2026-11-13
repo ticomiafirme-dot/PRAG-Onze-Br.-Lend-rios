@@ -10,7 +10,7 @@ import type { GameMode } from '../engine/draft';
 import { LogoMark } from '../components/Logo';
 import { Crest } from '../components/Crest';
 import { Modal } from '../components/ui';
-import { GoogleButton, UserAvatar } from '../components/Account';
+import { GoogleButton, StaffBadge, UserAvatar } from '../components/Account';
 import { useAuth } from '../cloud/auth';
 import { cloudEnabled } from '../cloud/config';
 import { useHistory } from '../history/store';
@@ -33,7 +33,9 @@ function HomeAccount() {
       <div className="home-account is-user">
         <UserAvatar size={44} />
         <div className="grow">
-          <strong>Olá, {user.name.split(' ')[0]}!</strong>
+          <strong>
+            {user.title ? `Bem-vindo de volta, ${user.title.toLowerCase()} ${user.name.split(' ')[0]}!` : `Olá, ${user.name.split(' ')[0]}!`} <StaffBadge small />
+          </strong>
           <span className="dim">Seu progresso é salvo automaticamente na nuvem.</span>
           {hall}
         </div>

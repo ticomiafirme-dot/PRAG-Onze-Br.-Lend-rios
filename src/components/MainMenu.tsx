@@ -4,7 +4,7 @@ import { useAuth } from '../cloud/auth';
 import { cloudEnabled } from '../cloud/config';
 import { navigate, toHash, useRoute } from '../router';
 import { resumeRoute, useGame } from '../state/store';
-import { GoogleButton, ProfileAvatar, SignOutButton, SyncIndicator, UserAvatar } from './Account';
+import { GoogleButton, ProfileAvatar, SignOutButton, StaffBadge, SyncIndicator, UserAvatar } from './Account';
 import { useProfileAvatar } from '../cloud/profile';
 import { Icon } from './Icon';
 import type { IconName } from './icons';
@@ -57,6 +57,7 @@ export function MainMenu({ onClose }: { onClose: () => void }) {
               <UserAvatar size={48} />
               <div>
                 <strong>{user.name}</strong>
+                <StaffBadge small />
                 <span className="dim">{user.email}</span>
               </div>
             </>
@@ -124,6 +125,7 @@ export function HeaderAccount({ onOpenMenu }: { onOpenMenu: () => void }) {
         <button className="header-user" onClick={onOpenMenu} aria-label={`Conta de ${user.name}`}>
           <UserAvatar size={34} />
           <span className="header-user-name">{user.name.split(' ')[0]}</span>
+          <StaffBadge small />
         </button>
       </div>
     );

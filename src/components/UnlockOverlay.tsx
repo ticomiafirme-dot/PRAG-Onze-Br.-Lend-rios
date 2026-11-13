@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { ACHIEVEMENT_BY_ID, TIER_LABEL } from '../history/achievements';
 import { COMPETITION_BY_ID } from '../history/competitions';
 import { useHistory, type Notice } from '../history/store';
-import { usePlayerName } from '../cloud/profile';
+import { usePlayerName, usePlayerRole } from '../cloud/profile';
 import { navigate } from '../router';
 import { ShareModal } from '../share/ShareModal';
 import { achievementFilename, renderAchievementCard } from '../share/achievementCard';
@@ -25,6 +25,7 @@ function NoticeView({ notice, onClose, remaining }: { notice: Notice; onClose: (
   const [sharing, setSharing] = useState(false);
   const seasons = useHistory((s) => s.data.seasons);
   const playerName = usePlayerName();
+  const playerRole = usePlayerRole();
 
   useEffect(() => {
     const on = (e: KeyboardEvent) => e.key === 'Escape' && !sharing && onClose();
@@ -69,7 +70,7 @@ function NoticeView({ notice, onClose, remaining }: { notice: Notice; onClose: (
             title={`Conquista: ${u.name}`}
             filename={achievementFilename(u)}
             text={`Desbloqueei a conquista "${u.name}" no PRAG Onze BR Lendário!`}
-            render={() => renderAchievementCard({ unlock: u, season, playerName })}
+            render={() => renderAchievementCard({ unlock: u, season, playerName, playerRole })}
             onClose={() => setSharing(false)}
           />
         )}

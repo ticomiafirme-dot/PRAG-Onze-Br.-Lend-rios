@@ -3,7 +3,7 @@
 // a camisa do clube. O fundo e o aro seguem a cor da carta (Lenda, Ídolo...).
 // Tudo é gerado como SVG, sem fotos e sem imagens externas.
 import type { Club, Decade } from '../data/types';
-import { crestPattern, crestShape, type CrestOp } from '../components/crestGeometry';
+import { crestPattern, crestShape, STAR_PATH, type CrestOp } from '../components/crestGeometry';
 import type { Tier } from '../components/cardTier';
 import { collarOf, type Kit } from './kits';
 import { rng, type FaceShape, type HairColor, type Look, type SkinTone } from './looks';
@@ -47,6 +47,87 @@ export interface AvatarInput {
   tier: Tier;
   /** Semente para os detalhes do fundo. */
   seed: number;
+  /** Acessórios e moldura especiais (usados só no avatar exclusivo do fundador). */
+  extras?: AvatarExtras;
+}
+
+export interface AvatarExtras {
+  glasses?: boolean;
+  /** Corrente prateada com pingente de cruz. */
+  chain?: boolean;
+  /** Moldura exclusiva do fundador: fundo preto e roxo, raios dourados, aro duplo com estrelas. */
+  frame?: 'fundador';
+}
+
+type TierArtColors = (typeof TIER_ART)[Tier];
+
+const FUNDADOR_ART: TierArtColors = { light: '#9d5cff', mid: '#3a1466', dark: '#07020f', ring: '#ffcf1f', ringShade: '#1c0838', glow: '#ffd84a' };
+
+/** Raios dourados atrás do personagem (moldura do fundador). */
+function goldRays(): string {
+  let out = '';
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    const w = 0.09;
+    const x1 = 100 + Math.cos(a - w) * 130;
+    const y1 = 92 + Math.sin(a - w) * 130;
+    const x2 = 100 + Math.cos(a + w) * 130;
+    const y2 = 92 + Math.sin(a + w) * 130;
+    out += `<path d="M100 92 L${f(x1)} ${f(y1)} L${f(x2)} ${f(y2)} Z" fill="#ffcf1f" opacity="${i % 2 ? 0.1 : 0.2}"/>`;
+  }
+  for (let i = 0; i < 14; i++) {
+    const a = i * 2.39996;
+    const rr = 30 + ((i * 37) % 55);
+    const x = 100 + Math.cos(a) * rr;
+    const y = 80 + Math.sin(a) * rr * 0.8;
+    const sz = 1 + (i % 3) * 0.6;
+    out += `<path d="M${f(x)} ${f(y - sz * 2.4)} L${f(x + sz * 0.6)} ${f(y - sz * 0.6)} L${f(x + sz * 2.4)} ${f(y)} L${f(x + sz * 0.6)} ${f(y + sz * 0.6)} L${f(x)} ${f(y + sz * 2.4)} L${f(x - sz * 0.6)} ${f(y + sz * 0.6)} L${f(x - sz * 2.4)} ${f(y)} L${f(x - sz * 0.6)} ${f(y - sz * 0.6)} Z" fill="#fff1a8" opacity="0.85"/>`;
+  }
+  return out;
+}
+
+/** Aro do fundador: duplo, dourado, com estrelas em volta. */
+function fundadorRing(): string {
+  let stars = '';
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + ((i - 2) * Math.PI) / 9;
+    stars += `<path d="${STAR_PATH}" transform="translate(${f(100 + Math.cos(a) * 93)} ${f(100 + Math.sin(a) * 93)}) scale(0.95)" fill="#fff1a8" stroke="#5c3b00" stroke-width="0.6"/>`;
+  }
+  return (
+    `<circle cx="100" cy="100" r="93.5" fill="none" stroke="url(#goldRing)" stroke-width="7"/>` +
+    `<circle cx="100" cy="100" r="89.6" fill="none" stroke="${INK}" stroke-width="1.6"/>` +
+    `<circle cx="100" cy="100" r="97.4" fill="none" stroke="${INK}" stroke-width="1.6"/>` +
+    `<circle cx="100" cy="100" r="86.5" fill="none" stroke="#ffcf1f" stroke-width="1.2" opacity="0.7"/>` +
+    stars +
+    `<path d="M30 58 A80 80 0 0 1 70 22" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" opacity="0.55"/>`
+  );
+}
+
+/** Óculos de armação escura retangular (aro só em cima, lentes claras). */
+function glasses(g: Geo): string {
+  const { fx, cx, hw } = g;
+  let out = '';
+  for (const side of [-1, 1]) {
+    const x = fx + side * 13;
+    out += `<path d="M${f(x - 10.5)} 79.5 L${f(x + 10.5)} 79.5 L${f(x + 10)} 89 Q${f(x + 9.5)} 92.5 ${f(x + 6)} 92.5 L${f(x - 6)} 92.5 Q${f(x - 9.5)} 92.5 ${f(x - 10)} 89 Z" fill="#dbe8ff" fill-opacity="0.16" stroke="#3a4250" stroke-width="1.1"/>`;
+    out += `<path d="M${f(x - 10.8)} 79.3 L${f(x + 10.8)} 79.3" stroke="${INK}" stroke-width="2.8" stroke-linecap="round"/>`;
+    out += `<path d="M${f(x - 6)} 82 L${f(x - 2)} 85.5" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="0.55"/>`;
+  }
+  out += `<path d="M${f(fx - 2.6)} 80.4 Q${f(fx)} 78.6 ${f(fx + 2.6)} 80.4" fill="none" stroke="${INK}" stroke-width="1.8" stroke-linecap="round"/>`;
+  out += `<path d="M${f(fx - 23.5)} 80 L${f(cx - hw - 1)} 83.5 M${f(fx + 23.5)} 80 L${f(cx + hw + 1)} 83.5" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>`;
+  return out;
+}
+
+/** Corrente prateada com pingente de cruz, por cima da camisa. */
+function chain(g: Geo): string {
+  const { cx } = g;
+  const silver = '#d9dee6';
+  return (
+    `<path d="M${f(cx - 15.5)} 137 Q${f(cx - 9)} 156 ${f(cx)} 160 Q${f(cx + 9)} 156 ${f(cx + 15.5)} 137" fill="none" stroke="#5e6672" stroke-width="2.4" stroke-linecap="round"/>` +
+    `<path d="M${f(cx - 15.5)} 137 Q${f(cx - 9)} 156 ${f(cx)} 160 Q${f(cx + 9)} 156 ${f(cx + 15.5)} 137" fill="none" stroke="${silver}" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="1.6 1.2"/>` +
+    `<path d="M${f(cx - 1.6)} 160 h3.2 v3.4 h3 v3 h-3 v7.6 h-3.2 v-7.6 h-3 v-3 h3 Z" fill="${silver}" stroke="#4a515c" stroke-width="0.9" stroke-linejoin="round"/>` +
+    `<path d="M${f(cx - 0.4)} 161.5 v10" stroke="#ffffff" stroke-width="0.7" opacity="0.8"/>`
+  );
 }
 
 const f = (n: number) => (Math.round(n * 10) / 10).toString();
@@ -480,7 +561,7 @@ function crestBadge(club: Club, x: number, y: number, w: number): string {
 
 // ---------------------------------------------------------------- moldura
 
-type TierArt = (typeof TIER_ART)[Tier];
+type TierArt = TierArtColors;
 
 function backdropDefs(t: TierArt): string {
   return (
@@ -524,17 +605,18 @@ export function ringSvg(tier: Tier): string {
 
 // ---------------------------------------------------------------- avatar
 
-export function avatarSvg({ look, kit, club, decade, tier, seed }: AvatarInput): string {
+export function avatarSvg({ look, kit, club, decade, tier, seed, extras }: AvatarInput): string {
   const r = rng(seed);
   const g = geometry(look);
   const s = SKIN[look.skin];
-  const t = TIER_ART[tier];
+  const fundador = extras?.frame === 'fundador';
+  const t = fundador ? FUNDADOR_ART : TIER_ART[tier];
   const { cx, hw, top, chin } = g;
   const hair = hairLayers(look, g, r);
   const beard = facialHair(look, g);
   const face = facePath(g);
 
-  const brush = brushStrokes(t, r);
+  const brush = fundador ? goldRays() : brushStrokes(t, r);
 
   const outline = `stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"`;
   const stripeShift = (look.turn * 0.6) % 32;
@@ -543,6 +625,9 @@ export function avatarSvg({ look, kit, club, decade, tier, seed }: AvatarInput):
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">`,
     `<defs>`,
     backdropDefs(t),
+    fundador
+      ? `<linearGradient id="goldRing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1a8"/><stop offset="0.35" stop-color="#ffcf1f"/><stop offset="0.7" stop-color="#b37c00"/><stop offset="1" stop-color="#ffe680"/></linearGradient>`
+      : '',
     `<linearGradient id="shirt" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/><stop offset="0.45" stop-color="#ffffff" stop-opacity="0"/><stop offset="0.8" stop-color="#000000" stop-opacity="0.18"/><stop offset="1" stop-color="#000000" stop-opacity="0.34"/></linearGradient>`,
     `<clipPath id="circle"><circle cx="100" cy="100" r="90"/></clipPath>`,
     `<clipPath id="face"><path d="${face}"/></clipPath>`,
@@ -564,6 +649,7 @@ export function avatarSvg({ look, kit, club, decade, tier, seed }: AvatarInput):
     `<path d="${BODY}" fill="none" ${outline}/>`,
     collar(kit, decade, s, g),
     crestBadge(club, 121, 158, 15),
+    extras?.chain ? chain(g) : '',
     // orelhas
     `<ellipse cx="${f(cx - hw - 0.5)}" cy="88" rx="6.5" ry="10" fill="${s.base}" ${outline}/>`,
     `<ellipse cx="${f(cx + hw + 0.5)}" cy="88" rx="6.5" ry="10" fill="${s.base}" ${outline}/>`,
@@ -581,13 +667,14 @@ export function avatarSvg({ look, kit, club, decade, tier, seed }: AvatarInput):
     `<path d="${face}" fill="none" ${outline}/>`,
     features(look, g),
     beard.over,
+    extras?.glasses ? glasses(g) : '',
     hair.front,
     look.headband
       ? `<path d="M${f(cx - hw - 3.5)} 63 Q${f(cx)} 51 ${f(cx + hw + 3.5)} 63 L${f(cx + hw + 3)} 72 Q${f(cx)} 60.5 ${f(cx - hw - 3)} 72 Z" fill="#f3eee2" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/><path d="M${f(cx - hw + 2)} 66 Q${f(cx)} 56.5 ${f(cx + hw - 2)} 66" fill="none" stroke="#cfc6b2" stroke-width="1.4"/>`
       : '',
     `</g>`,
     `</g>`,
-    ring(t),
+    fundador ? fundadorRing() : ring(t),
     `</svg>`,
   ].join('');
 }

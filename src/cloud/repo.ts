@@ -102,6 +102,12 @@ export function createRepo(sb: SupabaseClient, uid: string) {
       return (await this.profile())!;
     },
 
+    /** Título especial do jogador (tabela staff), se houver. */
+    async staffTitle(): Promise<string | null> {
+      const { data, error } = await sb.from('staff').select('title').eq('user_id', uid).maybeSingle();
+      return error || !data ? null : ((data as { title: string }).title ?? null);
+    },
+
     /** O nome está livre? null quando não deu para saber. */
     async nameAvailable(name: string): Promise<boolean | null> {
       const { data, error } = await sb.rpc('display_name_available', { wanted: name });

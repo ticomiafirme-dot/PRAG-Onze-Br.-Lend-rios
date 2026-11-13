@@ -5,7 +5,7 @@ import { ACHIEVEMENT_BY_ID, TIER_LABEL } from '../history/achievements';
 import { decadesLabel, efficiency } from '../history/record';
 import { useHistory, useSeasonDetails } from '../history/store';
 import type { MatchLine, SeasonEntry } from '../history/types';
-import { usePlayerName } from '../cloud/profile';
+import { usePlayerName, usePlayerRole } from '../cloud/profile';
 import { BackLink } from '../components/ui';
 import { Medal } from '../components/Medal';
 import { fmtDate, SeasonCrest, SeasonLineup, statusLabel } from '../components/SeasonViews';
@@ -31,6 +31,7 @@ export function Temporada({ id }: { id: string }) {
   const season = useHistory((s) => s.data.seasons.find((x) => x.runId === id));
   const { details, loading } = useSeasonDetails(season ? id : null);
   const playerName = usePlayerName();
+  const playerRole = usePlayerRole();
   const [sharing, setSharing] = useState<'resultado' | 'escalacao' | null>(null);
   const [comp, setComp] = useState<MatchLine['comp']>('brasileirao');
 
@@ -328,10 +329,10 @@ export function Temporada({ id }: { id: string }) {
           initial={sharing}
           variants={[
             ...(s.status !== 'in_progress'
-              ? [{ id: 'resultado', label: 'Resultado', title: 'Arte do resultado', filename: resultFilename(s), text: shareText(s), render: () => renderResultCard({ season: s, details, playerName }) }]
+              ? [{ id: 'resultado', label: 'Resultado', title: 'Arte do resultado', filename: resultFilename(s), text: shareText(s), render: () => renderResultCard({ season: s, details, playerName, playerRole }) }]
               : []),
             ...(hasLineup(details)
-              ? [{ id: 'escalacao', label: 'Escalação', title: 'Arte da escalação', filename: lineupFilename(s), text: lineupText(s, details), render: () => renderLineupCard({ season: s, details, playerName }) }]
+              ? [{ id: 'escalacao', label: 'Escalação', title: 'Arte da escalação', filename: lineupFilename(s), text: lineupText(s, details), render: () => renderLineupCard({ season: s, details, playerName, playerRole }) }]
               : []),
           ]}
           onClose={() => setSharing(null)}

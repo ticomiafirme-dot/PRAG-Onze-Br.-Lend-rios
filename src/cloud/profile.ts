@@ -9,6 +9,12 @@ export function usePlayerName(): string | null {
   return user?.name || loadPlayerName() || null;
 }
 
+/** Como o jogador aparece nas artes: o título especial (ex.: "Presidente") ou "Técnico". */
+export function usePlayerRole(): string {
+  const title = useAuth((s) => (s.status === 'signed-in' ? (s.user?.title ?? null) : null));
+  return title || 'Técnico';
+}
+
 const useVisitorAvatar = create<{ key: string | null }>(() => ({ key: loadProfileAvatar() }));
 
 /** Avatar de jogador usado como foto de perfil (da conta, ou do visitante neste aparelho). */

@@ -3,7 +3,7 @@ import { ACHIEVEMENT_DEFS, TIER_LABEL, TIER_ORDER, type AchievementTier } from '
 import { decadesLabel } from '../history/record';
 import { useHistory } from '../history/store';
 import type { UnlockRecord } from '../history/types';
-import { usePlayerName } from '../cloud/profile';
+import { usePlayerName, usePlayerRole } from '../cloud/profile';
 import { Medal } from '../components/Medal';
 import { fmtDate } from '../components/SeasonViews';
 import { AccountBanner } from '../components/Account';
@@ -25,6 +25,7 @@ interface Row {
 export function Conquistas() {
   const data = useHistory((s) => s.data);
   const playerName = usePlayerName();
+  const playerRole = usePlayerRole();
   const [sharing, setSharing] = useState<UnlockRecord | null>(null);
   const [filter, setFilter] = useState<'todas' | 'desbloqueadas' | 'bloqueadas'>('todas');
 
@@ -137,7 +138,7 @@ export function Conquistas() {
           title={`Conquista: ${sharing.name}`}
           filename={achievementFilename(sharing)}
           text={`Desbloqueei a conquista "${sharing.name}" no PRAG Onze BR Lendário!`}
-          render={() => renderAchievementCard({ unlock: sharing, season: sharingSeason, playerName })}
+          render={() => renderAchievementCard({ unlock: sharing, season: sharingSeason, playerName, playerRole })}
           onClose={() => setSharing(null)}
         />
       )}

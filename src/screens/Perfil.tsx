@@ -7,7 +7,7 @@ import { useProfileAvatar } from '../cloud/profile';
 import { ACHIEVEMENT_DEFS } from '../history/achievements';
 import { careerStats } from '../history/records';
 import { useHistory } from '../history/store';
-import { AccountBanner, GoogleButton, ProfileAvatar, SignOutButton, SyncIndicator } from '../components/Account';
+import { AccountBanner, GoogleButton, ProfileAvatar, SignOutButton, StaffBadge, SyncIndicator } from '../components/Account';
 import { AvatarPicker } from '../components/AvatarPicker';
 import { useToast } from '../components/ui';
 import { fmtDate, SeasonCard } from '../components/SeasonViews';
@@ -208,7 +208,7 @@ export function Perfil() {
               </form>
             ) : (
               <h2>
-                {user.name}{' '}
+                {user.name} <StaffBadge />{' '}
                 <button
                   className="btn btn-link"
                   onClick={() => {

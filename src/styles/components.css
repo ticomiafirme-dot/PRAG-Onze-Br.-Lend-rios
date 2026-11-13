@@ -840,3 +840,15 @@ button.slot-empty {
     grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   }
 }
+
+.picker-exclusive {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.picker-item.is-exclusive {
+  width: 132px;
+  border-color: rgba(255, 207, 31, 0.6);
+  background: linear-gradient(160deg, rgba(157, 92, 255, 0.22), rgba(255, 207, 31, 0.1));
+}

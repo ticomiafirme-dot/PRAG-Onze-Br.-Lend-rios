@@ -9,6 +9,8 @@ import { Modal } from './ui';
 import { db } from '../data/db';
 import { useProfileAvatar } from '../cloud/profile';
 import { PlayerFace } from './PlayerFace';
+import { Icon } from './Icon';
+import { isOwnerAvatar, ownerAvatarUrl } from '../avatars/owner';
 
 /** Logotipo "G" oficial do Google (quatro cores). */
 export function GoogleG({ size = 20 }: { size?: number }) {
@@ -32,6 +34,19 @@ export function GoogleButton({ label = 'Entrar com Google', block = false }: { l
       </span>
       {label}
     </button>
+  );
+}
+
+/** Tag especial do jogador (ex.: PRESIDENTE, do fundador do jogo). */
+export function StaffBadge({ small = false }: { small?: boolean }) {
+  const title = useAuth((s) => (s.status === 'signed-in' ? (s.user?.title ?? null) : null));
+  if (!title) return null;
+  const tip = title.toLowerCase() === 'presidente' ? 'Fundador e presidente do Onze BR Lendário' : title;
+  return (
+    <span className={`staff-badge ${small ? 'is-small' : ''}`} title={tip}>
+      <Icon name="crown" size={small ? 11 : 14} />
+      {title.toUpperCase()}
+    </span>
   );
 }
 
@@ -116,6 +131,9 @@ export function SyncIndicator() {
 export function UserAvatar({ size = 36 }: { size?: number }) {
   const user = useAuth((s) => s.user);
   const chosen = useProfileAvatar();
+  if (isOwnerAvatar(chosen) && user?.title) {
+    return <img className="pavatar user-avatar-face" src={ownerAvatarUrl()} width={size} height={size} alt={user.name} draggable={false} />;
+  }
   const card = db.cardMaybe(chosen);
   if (card) return <PlayerFace card={card} size={size} className="user-avatar-face" />;
   // sem avatar escolhido: iniciais (a foto da conta Google não é usada)

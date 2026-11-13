@@ -11,6 +11,8 @@ export interface AccountUser {
   name: string;
   /** Avatar de jogador escolhido como foto de perfil (chave da carta: jogador@clube@década). */
   gameAvatar: string | null;
+  /** Título especial concedido pelo dono do jogo (ex.: "Presidente"). */
+  title?: string | null;
   /** Data de entrada no jogo (criação do perfil). */
   createdAt: string | null;
 }

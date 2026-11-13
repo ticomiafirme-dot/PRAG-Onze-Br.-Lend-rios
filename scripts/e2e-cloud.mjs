@@ -330,7 +330,7 @@ if (rows !== 20) errors.push(`computador: classificação com ${rows} linhas`);
 step('computador vê a temporada jogada no celular, com detalhes da nuvem');
 await A.page.goto(BASE + '#hall');
 await A.page.waitForSelector('.hall-title');
-const owner = await A.page.locator('.hall-owner strong').textContent();
+const owner = (await A.page.locator('.hall-owner strong').textContent()).trim();
 if (owner !== 'Jogador Teste') errors.push(`Hall sem o nome do jogador: ${owner}`);
 await A.shot('06-hall-sincronizado');
 await A.page.goto(BASE + '#conquistas');

@@ -15,7 +15,7 @@ import { buildSeasonRecord } from '../history/record';
 import { useHistory } from '../history/store';
 import { ShareModal } from '../share/ShareModal';
 import { renderResultCard, resultFilename } from '../share/resultCard';
-import { usePlayerName } from '../cloud/profile';
+import { usePlayerName, usePlayerRole } from '../cloud/profile';
 import { PlayerFaceByKey } from '../components/PlayerFace';
 import { hasLineup, lineupFilename, lineupText, renderLineupCard } from '../share/lineupCard';
 import { useAuth } from '../cloud/auth';
@@ -46,6 +46,7 @@ function FinalInner() {
   const stored = useHistory((h) => h.data.seasons.find((x) => x.runId === run.id));
   const record = useMemo(() => buildSeasonRecord(run, 'finished'), [run]);
   const playerName = usePlayerName();
+  const playerRole = usePlayerRole();
   const accountName = useAuth((st) => (st.status === 'signed-in' ? st.user?.name ?? null : null));
   const players = userPlayerStats(c);
   const top = [...players].sort((a, b) => b.goals - a.goals)[0];
@@ -260,7 +261,7 @@ function FinalInner() {
               title: 'Compartilhar resultado',
               filename: resultFilename(record),
               text: shareText,
-              render: () => renderResultCard({ season: stored && stored.status === 'finished' ? stored : record, details: record.details, playerName }),
+              render: () => renderResultCard({ season: stored && stored.status === 'finished' ? stored : record, details: record.details, playerName, playerRole }),
             },
             ...(hasLineup(record.details)
               ? [
@@ -270,7 +271,7 @@ function FinalInner() {
                     title: 'Compartilhar escalação',
                     filename: lineupFilename(record),
                     text: lineupText(record, record.details),
-                    render: () => renderLineupCard({ season: stored && stored.status === 'finished' ? stored : record, details: record.details, playerName }),
+                    render: () => renderLineupCard({ season: stored && stored.status === 'finished' ? stored : record, details: record.details, playerName, playerRole }),
                   },
                 ]
               : []),

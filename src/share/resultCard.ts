@@ -32,6 +32,8 @@ export interface ResultCardInput {
   details: SeasonDetails | null;
   /** Nome do jogador (perfil), se houver. */
   playerName?: string | null;
+  /** Como o jogador aparece ("Técnico" ou um título especial, como "Presidente"). */
+  playerRole?: string | null;
 }
 
 const M = 64;
@@ -58,7 +60,7 @@ export function resultFilename(s: SeasonEntry): string {
   return `${fileBase(s)}-Resultado.png`;
 }
 
-export async function renderResultCard({ season: s, details: d, playerName }: ResultCardInput): Promise<HTMLCanvasElement> {
+export async function renderResultCard({ season: s, details: d, playerName, playerRole }: ResultCardInput): Promise<HTMLCanvasElement> {
   await ensureFonts();
   const { canvas, ctx } = createCanvas();
   const club = s.clubId ? CLUB_BY_ID[s.clubId] : null;
@@ -124,7 +126,7 @@ export async function renderResultCard({ season: s, details: d, playerName }: Re
     cx += w + 12;
   };
   chip(s.formationId, true);
-  if (playerName) chip(`TÉCNICO: ${playerName.toUpperCase()}`);
+  if (playerName) chip(`${(playerRole || 'Técnico').toUpperCase()}: ${playerName.toUpperCase()}`);
 
   // 3. Faixa de destaque
   const hl = headline(s);

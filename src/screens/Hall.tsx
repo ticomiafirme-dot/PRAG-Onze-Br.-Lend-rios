@@ -7,7 +7,7 @@ import { decadesLabel } from '../history/record';
 import { careerStats, greatCampaigns } from '../history/records';
 import { useHistory, useSeasonDetails } from '../history/store';
 import type { SeasonEntry } from '../history/types';
-import { AccountBanner, ProfileAvatar } from '../components/Account';
+import { AccountBanner, ProfileAvatar, StaffBadge } from '../components/Account';
 import { Medal } from '../components/Medal';
 import { fmtDate, SeasonCard, SeasonCrest, SeasonLineup } from '../components/SeasonViews';
 import { Trophy } from '../components/Trophy';
@@ -40,7 +40,9 @@ export function Hall() {
           <div className="hall-owner">
             <ProfileAvatar size={76} />
             <div>
-              <strong>{signedIn ? user.name : 'Visitante'}</strong>
+              <strong>
+                {signedIn ? user.name : 'Visitante'} <StaffBadge />
+              </strong>
               <span className="dim">{signedIn ? `No PRAG desde ${fmtDate(user.createdAt)}` : 'Coleção salva neste aparelho'}</span>
             </div>
           </div>
