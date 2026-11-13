@@ -51,7 +51,7 @@ Qualquer jogador de uma categoria ocupa qualquer vaga dela. Um jogador pertence 
 
 ## Rodando
 
-Requisitos: Node 20+.
+Requisitos: Node 20.19+ (ou 22).
 
 ```bash
 npm install
@@ -69,6 +69,10 @@ npm run e2e            # fluxo completo no navegador (desktop e celular) — req
 npm run e2e:modes      # Mistura, Diário, Era Única e Tríplice Coroa
 npm run e2e:cloud      # login Google, salvamento automático e dois aparelhos (Supabase simulado; ver docs/CONTAS.md)
 ```
+
+### Publicar
+
+O `dist/` é estático. O repositório já traz o `netlify.toml`: no Netlify, basta importar o repositório do GitHub e publicar. O passo a passo, incluindo o login com Google e o domínio próprio, está em [docs/NETLIFY.md](docs/NETLIFY.md).
 
 ## Base de dados
 

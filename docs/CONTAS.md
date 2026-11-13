@@ -72,7 +72,7 @@ Depois gere o site:
 npm run build
 ```
 
-O resultado em `dist/` é estático e serve em Vercel, Netlify, Cloudflare Pages, GitHub Pages ou qualquer servidor de arquivos. No Vercel e no Netlify, cadastre as duas variáveis no painel do projeto antes do build.
+O resultado em `dist/` é estático e serve em Vercel, Netlify, Cloudflare Pages, GitHub Pages ou qualquer servidor de arquivos. No Vercel e no Netlify, cadastre as duas variáveis no painel do projeto antes do build. Para o Netlify há um passo a passo em [NETLIFY.md](NETLIFY.md).
 
 ## Segurança e privacidade
 
