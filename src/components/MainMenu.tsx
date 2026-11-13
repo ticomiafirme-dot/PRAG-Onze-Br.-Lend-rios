@@ -91,7 +91,7 @@ export function MainMenu({ onClose }: { onClose: () => void }) {
         {status === 'signed-in' && (
           <div className="menu-foot">
             <SyncIndicator />
-            <SignOutButton className="btn btn-ghost btn-block" />
+            <SignOutButton className="btn btn-ghost btn-block" onDone={onClose} />
           </div>
         )}
       </nav>

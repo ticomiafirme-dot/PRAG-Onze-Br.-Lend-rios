@@ -14,7 +14,16 @@ Inspirado nas mecânicas de draft por sorteio do Perfect Season FC, com identida
 6. **Capitão** — +3 de overall, faixa de capitão e química em dobro.
 7. **Pré-temporada** — força por setor, química e os 19 rivais (cada um escalado com lendas da própria história).
 8. **Brasileirão** — 38 rodadas em turno e returno. Assista às partidas em 1x/2x/4x ou pule para o resultado.
-9. **Estatísticas, resultado final, compartilhamento e ranking.**
+9. **Estatísticas, resultado final e ranking.**
+10. **Arte do resultado** — card PNG 1080 × 1350 gerado com os dados reais da temporada: baixar, copiar a imagem ou compartilhar direto (celular).
+
+### Sua trajetória
+
+- **Login com Google** (opcional): progresso, histórico, títulos, conquistas e recordes salvos na nuvem e sincronizados entre computador e celular. Também dá para jogar como visitante (dados no aparelho). Configuração em [`docs/CONTAS.md`](docs/CONTAS.md).
+- **Meu Histórico** — cada temporada fica registrada para sempre, com escalação, tabela, jogos e estatísticas; dá para gerar de novo a arte de qualquer temporada antiga.
+- **Conquistas** — Temporada Perfeita, Muralha, Artilheiro, Lendas Reunidas, Invencível, Rei do Brasil e outras, com raridade (bronze, prata, ouro, lendária), comemoração animada e arte para compartilhar.
+- **Meus Recordes** — campanha, ataque, defesa e elenco, sempre com a temporada em que foram alcançados.
+- **Hall dos Lendários** — a sala de troféus pessoal: troféus por competição, medalhas, grandes campanhas e o maior elenco no campo.
 
 ### Modos
 
@@ -27,7 +36,7 @@ Inspirado nas mecânicas de draft por sorteio do Perfect Season FC, com identida
 | Desafio Semanal | Um clube por semana, nível Difícil, sorteios iguais para todos |
 | Tríplice Coroa | Estadual + Copa do Brasil (mata-mata com pênaltis) + Brasileirão na mesma temporada |
 
-O progresso é salvo automaticamente no navegador (localStorage), e o ranking das campanhas fica salvo no dispositivo.
+O progresso é salvo automaticamente no navegador (localStorage) e, com login, também na nuvem.
 
 ### Posições: 4 categorias
 
@@ -55,9 +64,10 @@ Outros comandos:
 npm run build          # site estático em dist/ (caminhos relativos; serve em qualquer hospedagem)
 npm run build:single   # um único HTML autocontido em dist-single/
 npm run build:artifact # página autocontida para publicar no Claude (ranking compartilhado via db/user)
-npm test               # testes do motor (Vitest) com a base real
+npm test               # testes do motor, do histórico/conquistas e das regras do banco (Vitest + PGlite)
 npm run e2e            # fluxo completo no navegador (desktop e celular) — requer `npx vite preview --port 4173`
 npm run e2e:modes      # Mistura, Diário, Era Única e Tríplice Coroa
+npm run e2e:cloud      # login Google, salvamento automático e dois aparelhos (Supabase simulado; ver docs/CONTAS.md)
 ```
 
 ## Base de dados
@@ -91,13 +101,17 @@ src/
     cup.ts         mata-mata ida e volta e pênaltis
     campaign.ts    calendário (Brasileirão, Copa do Brasil, estaduais) e estatísticas da temporada
     challenges.ts  desafios diário e semanal
+  history/     temporadas, títulos, conquistas, recordes e estatísticas de carreira
+  cloud/       login com Google (Supabase Auth), sincronização e acesso ao banco
+  share/       artes de compartilhamento (canvas → PNG) e a janela de compartilhar
   state/       estado do jogo (Zustand + persistência) e ranking local
   screens/     as telas do jogo
   components/  carta de jogador, campo, emblemas, bandeiras, logotipo
 scripts/data/  pipeline de coleta e montagem da base
+supabase/      migração SQL (tabelas, relacionamentos, gatilhos e RLS)
 ```
 
-Não há backend próprio: o ranking é salvo no dispositivo (`state/storage.ts`). Quando o jogo roda como página publicada no Claude, `state/sharedRanking.ts` também grava as campanhas em um ranking compartilhado entre todos que abrem o link (um documento por jogador, nomes resolvidos pelo perfil). Outro serviço de ranking pode ser plugado no mesmo ponto.
+O backend das contas é o Supabase (Auth + Postgres com RLS), configurado por variáveis de ambiente; sem elas, o jogo roda como visitante. O ranking é salvo no dispositivo (`state/storage.ts`). Quando o jogo roda como página publicada no Claude, `state/sharedRanking.ts` também grava as campanhas em um ranking compartilhado entre todos que abrem o link (um documento por jogador, nomes resolvidos pelo perfil). Outro serviço de ranking pode ser plugado no mesmo ponto.
 
 ## Créditos
 

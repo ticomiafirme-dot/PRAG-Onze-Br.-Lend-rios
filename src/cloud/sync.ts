@@ -5,6 +5,7 @@
 // - Progresso da partida: salvo automaticamente a cada mudança (com pausa
 //   curta para agrupar alterações), com controle de revisão para não
 //   sobrescrever o que outro aparelho salvou.
+import { CLUB_BY_ID } from '../data/clubs';
 import { packJSON, unpackJSON } from '../lib/compress';
 import { readJSON, writeJSON } from '../state/storage';
 import { migrateRunV2 } from '../state/migrate';
@@ -50,7 +51,7 @@ export function setConflictResolver(fn: (c: ConflictChoice) => Promise<'local' |
 }
 
 export function describeRun(run: Run): string {
-  const team = run.campaign?.teams.user?.name ?? (run.clubId ? run.clubId : 'Mistura Brasileira');
+  const team = run.campaign?.teams.user?.name ?? (run.clubId ? (CLUB_BY_ID[run.clubId]?.name ?? run.clubId) : 'Mistura Brasileira');
   if (run.campaign?.finished) return `${team} · temporada encerrada`;
   if (run.campaign) {
     const played = run.campaign.results.filter((m) => m.comp === 'brasileirao' && (m.home === 'user' || m.away === 'user')).length;
@@ -177,7 +178,13 @@ class SyncEngine {
 
   private enqueue(ops: Op[]): void {
     saveOutbox(this.uid, [...loadOutbox(this.uid), ...ops]);
-    useSync.getState().set({ pending: true });
+    this.markPending();
+  }
+
+  /** Há algo a enviar: o indicador mostra "Salvando…" (ou mantém o aviso de falha). */
+  private markPending(): void {
+    const st = useSync.getState().state;
+    useSync.getState().set({ pending: true, state: st === 'offline' || st === 'error' ? st : 'saving' });
   }
 
   private async sendOp(op: Op): Promise<void> {
@@ -239,6 +246,10 @@ class SyncEngine {
     const basedOnCloud = meta.baseRevision === cloud.revision;
     if (sameRun && basedOnCloud) return meta.dirty ? keepLocal() : undefined;
     if (sameRun && !meta.dirty) return adoptCloud();
+    // temporada encerrada já está no histórico: só pergunta quando as duas partidas estão em andamento
+    const done = (r: Run) => r.phase === 'finished';
+    if (!sameRun && done(cloudRun)) return keepLocal();
+    if (!sameRun && done(local)) return adoptCloud();
     // partidas diferentes, ou a mesma alterada nos dois aparelhos: o jogador decide
     const choice = await askConflict({
       local: { run: local, summary: describeRun(local) },
@@ -263,7 +274,7 @@ class SyncEngine {
   private runChanged(): void {
     const meta = loadMeta(this.uid);
     saveMeta(this.uid, { ...meta, dirty: true, runId: useGame.getState().run?.id ?? null });
-    useSync.getState().set({ pending: true });
+    this.markPending();
     if (this.saveTimer) clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(() => void this.flush(), DEBOUNCE_MS);
   }
@@ -319,7 +330,7 @@ class SyncEngine {
       await this.pushSave();
       this.backoff = 2000;
       const pending = loadOutbox(this.uid).length > 0 || loadMeta(this.uid).dirty;
-      useSync.getState().set({ state: 'synced', pending, error: null, lastSyncedAt: new Date().toISOString() });
+      useSync.getState().set({ state: pending ? 'saving' : 'synced', pending, error: null, lastSyncedAt: new Date().toISOString() });
       if (pending) this.saveTimer = setTimeout(() => void this.flush(), DEBOUNCE_MS);
       return !pending;
     } catch (e) {

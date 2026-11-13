@@ -1,6 +1,7 @@
 node_modules
 dist
 dist-single
+dist-cloud
 .DS_Store
 *.log
 coverage
@@ -9,3 +10,8 @@ test-results
 data-src/cache/
 .vite
 dist-artifact
+
+# variáveis locais (credenciais nunca vão para o repositório)
+.env
+.env.local
+.env.*.local

@@ -82,10 +82,12 @@ export function SyncIndicator() {
   const status = useAuth((s) => s.status);
   const { state, pending, retry } = useSync();
   if (status !== 'signed-in') return null;
-  const label = state === 'idle' && pending ? 'Salvando…' : SYNC_TEXT[state] ?? '';
+  // com alterações por enviar, nunca mostra "Sincronizado"
+  const shown = pending && (state === 'idle' || state === 'synced') ? 'saving' : state;
+  const label = SYNC_TEXT[shown] ?? '';
   return (
     <button
-      className={`sync-chip is-${state}`}
+      className={`sync-chip is-${shown}`}
       onClick={state === 'error' || state === 'offline' ? retry : undefined}
       title={state === 'error' || state === 'offline' ? 'Tentar sincronizar agora' : label}
       aria-live="polite"
@@ -115,7 +117,7 @@ export function UserAvatar({ size = 36 }: { size?: number }) {
 }
 
 /** Sair da conta (avisa se ainda há alterações a enviar). */
-export function SignOutButton({ className = 'btn btn-ghost' }: { className?: string }) {
+export function SignOutButton({ className = 'btn btn-ghost', onDone }: { className?: string; onDone?: () => void }) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const go = async () => {
@@ -123,6 +125,7 @@ export function SignOutButton({ className = 'btn btn-ghost' }: { className?: str
     await signOut();
     setBusy(false);
     setConfirming(false);
+    onDone?.();
   };
   return (
     <>

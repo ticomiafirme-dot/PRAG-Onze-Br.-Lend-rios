@@ -10,6 +10,8 @@ import { LINK_COLORS } from './Pitch';
 export function Header() {
   const route = useRoute();
   const [open, setOpen] = useState(false);
+  // fecha o menu ao mudar de tela (inclusive depois de sair da conta)
+  useEffect(() => setOpen(false), [route.path, route.params.id]);
   const link = (to: string, label: string, cls = '') => (
     <a href={toHash(to)} className={`nav-link ${route.path === to ? 'active' : ''} ${cls}`}>
       {label}
