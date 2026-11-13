@@ -14,6 +14,8 @@ export function toHash(path: string): string {
   if (!path || path === '/') return '#inicio';
   const club = path.match(/^\/clube\/(.+)$/);
   if (club) return `#clube-${club[1]}`;
+  const season = path.match(/^\/temporada\/(.+)$/);
+  if (season) return `#temporada-${season[1]}`;
   return '#' + path.replace(/^\//, '');
 }
 
@@ -25,6 +27,7 @@ export function parseHash(hash: string): Route {
   const legacyClub = raw.match(/^clube\/(.+)$/);
   if (legacyClub) return { path: '/clube/:id', params: { id: decodeURIComponent(legacyClub[1]) } };
   if (raw.startsWith('clube-')) return { path: '/clube/:id', params: { id: decodeURIComponent(raw.slice(6)) } };
+  if (raw.startsWith('temporada-')) return { path: '/temporada/:id', params: { id: decodeURIComponent(raw.slice(10)) } };
   return { path: '/' + raw, params: {} };
 }
 

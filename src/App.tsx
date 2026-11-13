@@ -1,4 +1,19 @@
+import { useEffect } from 'react';
 import { useRoute } from './router';
+import { cloudEnabled } from './cloud/config';
+import { useAuth } from './cloud/auth';
+import { initSession } from './cloud/session';
+import { backfillRun } from './history/hooks';
+import { useGame } from './state/store';
+import { UnlockOverlay } from './components/UnlockOverlay';
+import { SyncConflictDialog } from './components/SyncConflictDialog';
+import { goPlay } from './components/MainMenu';
+import { Perfil } from './screens/Perfil';
+import { Historico } from './screens/Historico';
+import { Temporada } from './screens/Temporada';
+import { Conquistas } from './screens/Conquistas';
+import { Recordes } from './screens/Recordes';
+import { Hall } from './screens/Hall';
 import { Header } from './components/ui';
 import { Home } from './screens/Home';
 import { ClubSelect } from './screens/ClubSelect';
@@ -16,8 +31,27 @@ import { Ranking } from './screens/Ranking';
 import { HowTo } from './screens/HowTo';
 import { Credits } from './screens/Credits';
 
+let started = false;
+
+/** Recupera a sessão (ou segue como visitante) e registra no histórico a partida salva. */
+function startApp(): void {
+  if (started) return;
+  started = true;
+  if (!cloudEnabled) {
+    backfillRun(useGame.getState().run);
+    return;
+  }
+  void initSession().then(() => {
+    if (useAuth.getState().status !== 'signed-in') backfillRun(useGame.getState().run);
+  });
+}
+
 export function App() {
   const route = useRoute();
+  useEffect(startApp, []);
+  useEffect(() => {
+    if (route.path === '/jogar') goPlay();
+  }, [route.path]);
   let screen;
   switch (route.path) {
     case '/clubes':
@@ -62,6 +96,24 @@ export function App() {
     case '/creditos':
       screen = <Credits />;
       break;
+    case '/perfil':
+      screen = <Perfil />;
+      break;
+    case '/historico':
+      screen = <Historico />;
+      break;
+    case '/temporada/:id':
+      screen = <Temporada id={route.params.id} />;
+      break;
+    case '/conquistas':
+      screen = <Conquistas />;
+      break;
+    case '/recordes':
+      screen = <Recordes />;
+      break;
+    case '/hall':
+      screen = <Hall />;
+      break;
     default:
       screen = <Home />;
   }
@@ -69,6 +121,8 @@ export function App() {
     <div className="app">
       <Header />
       <main key={route.path + (route.params.id ?? '')}>{screen}</main>
+      <UnlockOverlay />
+      <SyncConflictDialog />
     </div>
   );
 }

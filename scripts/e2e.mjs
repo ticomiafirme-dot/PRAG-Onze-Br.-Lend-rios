@@ -14,7 +14,17 @@ fs.mkdirSync(OUT, { recursive: true });
 
 async function run(label, contextOpts) {
   const browser = await chromium.launch();
-  const ctx = await browser.newContext(contextOpts);
+  const ctx = await browser.newContext({ ...contextOpts, acceptDownloads: true });
+  if (label === 'desktop') await ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
+  if (label === 'mobile') {
+    // compartilhamento nativo simulado (como no celular)
+    await ctx.addInitScript(() => {
+      navigator.canShare = (d) => !!d?.files?.length;
+      navigator.share = async (d) => {
+        window.__shared = d.files[0].name + ':' + d.files[0].type + ':' + d.files[0].size;
+      };
+    });
+  }
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
@@ -34,6 +44,17 @@ async function run(label, contextOpts) {
   };
   const shot = async (name) => page.screenshot({ path: path.join(OUT, `${label}-${name}.png`), fullPage: false });
   const step = (s) => console.log(`[${label}] ${s}`);
+  // comemorações de conquista/recorde/título aparecem por cima das telas
+  let celebrated = 0;
+  const dismiss = async () => {
+    for (let i = 0; i < 25; i++) {
+      const o = page.locator('.unlock-overlay');
+      if (!(await o.count())) return;
+      celebrated++;
+      await o.locator('button', { hasText: /^Continuar/ }).first().click();
+      await page.waitForTimeout(150);
+    }
+  };
 
   await page.goto(BASE);
   await page.getByRole('button', { name: /Jogar agora/i }).click();
@@ -98,6 +119,7 @@ async function run(label, contextOpts) {
   await page.waitForSelector('.draft-done', { timeout: 8000 });
   await shot('06-draft-completo');
   await page.waitForURL(/#escalacao/, { timeout: 8000 });
+  await dismiss();
   step('escalação');
   await page.waitForTimeout(400);
   await shot('07-escalacao');
@@ -120,6 +142,7 @@ async function run(label, contextOpts) {
   await shot('09-pretemporada');
   await page.getByRole('button', { name: /Iniciar temporada/i }).click();
   await page.waitForURL(/#campeonato/);
+  await dismiss();
   await shot('10-campeonato');
   step('partida');
   await page.getByRole('button', { name: /Jogar partida/i }).click();
@@ -135,15 +158,82 @@ async function run(label, contextOpts) {
   await shot('13-partida-fim');
   await page.getByRole('button', { name: /Continuar →/i }).click();
   await page.waitForURL(/#campeonato/);
+  await dismiss();
   // simula um jogo rápido e depois o restante
   await page.getByRole('button', { name: /Simular resultado/i }).click();
   await page.waitForTimeout(300);
+  await dismiss();
   await page.getByRole('button', { name: /Simular até o fim/i }).click();
   await page.getByRole('dialog').getByRole('button', { name: /^Simular$/ }).click();
   await page.waitForURL(/#resultado/);
   step('resultado');
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(800);
+  if (!(await page.locator('.unlock-overlay').count())) errors.push('nenhuma conquista comemorada ao fim da primeira temporada (Estreia)');
+  await shot('14a-conquista');
+  await dismiss();
   await shot('14-resultado');
+
+  // arte do resultado: prévia PNG + baixar / copiar / compartilhar
+  step('arte do resultado');
+  await page.getByRole('button', { name: /Compartilhar resultado/i }).click();
+  await page.waitForSelector('.share-preview img', { timeout: 15000 });
+  const dims = await page.evaluate(async () => {
+    const img = document.querySelector('.share-preview img');
+    const blob = await (await fetch(img.src)).blob();
+    return { w: img.naturalWidth, h: img.naturalHeight, type: blob.type, size: blob.size };
+  });
+  if (dims.w !== 1080 || dims.h !== 1350 || dims.type !== 'image/png' || dims.size < 50_000) errors.push(`arte com formato inesperado: ${JSON.stringify(dims)}`);
+  await shot('15a-arte');
+  const [download] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), page.getByRole('button', { name: /Baixar arte/i }).click()]);
+  const fname = download.suggestedFilename();
+  if (!/^PRAG-Corinthians-.+-Resultado\.png$/.test(fname)) errors.push(`nome do arquivo inesperado: ${fname}`);
+  const saved = path.join(OUT, `${label}-${fname}`);
+  await download.saveAs(saved);
+  if (fs.statSync(saved).size < 50_000) errors.push('PNG baixado muito pequeno');
+  if (label === 'desktop') {
+    await page.getByRole('button', { name: /Copiar imagem/i }).click();
+    await page.waitForFunction(() => /copiada|não permite/i.test(document.querySelector('.share-status')?.textContent ?? ''), null, { timeout: 8000 });
+    const st = await page.locator('.share-status').textContent();
+    if (!/copiada/i.test(st)) errors.push(`copiar imagem: "${st}"`);
+    const types = await page.evaluate(async () => (await navigator.clipboard.read())[0]?.types ?? []);
+    if (!types.includes('image/png')) errors.push(`área de transferência sem PNG: ${types}`);
+    await page.getByRole('button', { name: /Compartilhar imagem/i }).click();
+    await page.waitForFunction(() => /diretamente/i.test(document.querySelector('.share-status')?.textContent ?? ''), null, { timeout: 5000 }).catch(() => undefined);
+    const st2 = await page.locator('.share-status').textContent();
+    if (!/não compartilha imagens diretamente/i.test(st2)) errors.push(`fallback do compartilhar: "${st2}"`);
+  } else {
+    await page.getByRole('button', { name: /Compartilhar imagem/i }).click();
+    await page.waitForTimeout(300);
+    const shared = await page.evaluate(() => window.__shared);
+    if (!shared || !/^PRAG-.+-Resultado\.png:image\/png:\d{5,}$/.test(shared)) errors.push(`compartilhamento nativo não recebeu o PNG: ${shared}`);
+  }
+  await page.keyboard.press('Escape');
+
+  // histórico, detalhe da temporada, conquistas, recordes e Hall
+  step('histórico e Hall');
+  await page.goto(BASE + '#historico');
+  await page.waitForSelector('.season-card');
+  if ((await page.locator('.season-card').count()) < 1) errors.push('histórico vazio após a temporada');
+  await page.locator('.season-card').first().click();
+  await page.waitForURL(/#temporada-/);
+  await page.waitForSelector('table.data tbody tr');
+  const rowsT = await page.locator('table.data').first().locator('tbody tr').count();
+  if (rowsT !== 20) errors.push(`classificação da temporada com ${rowsT} linhas`);
+  await shot('15b-temporada');
+  await page.goto(BASE + '#conquistas');
+  await page.waitForSelector('.ach-card');
+  if (!(await page.locator('.ach-card.is-unlocked', { hasText: 'Estreia' }).count())) errors.push('conquista Estreia não aparece desbloqueada');
+  if ((await page.locator('.ach-card').count()) < 6) errors.push('catálogo de conquistas incompleto');
+  await page.goto(BASE + '#recordes');
+  await page.waitForSelector('.record-card');
+  const pts = await page.locator('.record-card', { hasText: 'Mais pontos' }).locator('.record-value').textContent();
+  if (!/\d+ pontos/.test(pts)) errors.push(`recorde de pontos vazio: ${pts}`);
+  await page.goto(BASE + '#hall');
+  await page.waitForSelector('.hall-title');
+  await shot('15c-hall');
+  await page.reload();
+  await page.goto(BASE + '#historico');
+  await page.waitForSelector('.season-card');
   await page.goto(BASE + '#estatisticas');
   await page.waitForSelector('.kpi-grid');
   await shot('15-estatisticas');
@@ -160,6 +250,7 @@ async function run(label, contextOpts) {
   const rows = await page.locator('table.data tbody tr').count();
   if (rows < 1) errors.push('ranking vazio após recarregar');
 
+  if (!celebrated) errors.push('nenhuma notificação de conquista exibida');
   await browser.close();
   return errors;
 }

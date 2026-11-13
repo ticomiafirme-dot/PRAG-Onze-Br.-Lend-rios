@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Logo } from './Logo';
+import { Icon } from './Icon';
+import { HeaderAccount, MainMenu } from './MainMenu';
 import { navigate, toHash, useRoute } from '../router';
 import { tierOf } from './PlayerCard';
 import { LINK_COLORS } from './Pitch';
 
 export function Header() {
   const route = useRoute();
+  const [open, setOpen] = useState(false);
   const link = (to: string, label: string, cls = '') => (
     <a href={toHash(to)} className={`nav-link ${route.path === to ? 'active' : ''} ${cls}`}>
       {label}
@@ -17,13 +21,18 @@ export function Header() {
         <a href="#inicio" className="logo-link" aria-label="Início">
           <Logo compact />
         </a>
-        <nav aria-label="Principal">
-          {link('/', 'Jogar')}
-          {link('/ranking', 'Ranking')}
-          {link('/como-jogar', 'Como jogar', 'nav-hide-sm')}
-          {link('/creditos', 'Fontes', 'nav-hide-sm')}
+        <nav aria-label="Principal" className="nav-main">
+          {link('/', 'Jogar', 'nav-hide-sm')}
+          {link('/ranking', 'Ranking', 'nav-hide-sm')}
+          {link('/hall', 'Hall dos Lendários', 'nav-hide-md nav-gold')}
         </nav>
+        <HeaderAccount onOpenMenu={() => setOpen(true)} />
+        <button className="menu-button" onClick={() => setOpen(true)} aria-label="Abrir menu" aria-expanded={open}>
+          <Icon name="menu" size={24} />
+        </button>
       </div>
+      {/* fora do cabeçalho: o desfoque do cabeçalho prenderia o menu fixo dentro dele */}
+      {open && createPortal(<MainMenu onClose={() => setOpen(false)} />, document.body)}
     </header>
   );
 }
@@ -115,12 +124,14 @@ export function Modal({ children, onClose, label }: { children: ReactNode; onClo
     window.addEventListener('keydown', on);
     return () => window.removeEventListener('keydown', on);
   }, [onClose]);
-  return (
+  // no corpo da página: animações e desfoques dos contêineres prenderiam a janela fixa
+  return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" role="dialog" aria-modal="true" aria-label={label} onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

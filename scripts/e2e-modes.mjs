@@ -21,6 +21,15 @@ page.on('console', (m) => {
 const shot = (name) => page.screenshot({ path: path.join(OUT, `${name}.png`) });
 const log = (s) => console.log(s);
 
+async function dismiss() {
+  for (let i = 0; i < 25; i++) {
+    const o = page.locator('.unlock-overlay');
+    if (!(await o.count())) return;
+    await o.locator('button', { hasText: /^Continuar/ }).first().click();
+    await page.waitForTimeout(150);
+  }
+}
+
 async function draftAll() {
   for (let r = 0; r < 11; r++) {
     await page.waitForSelector('.roulette.is-done', { timeout: 8000 });
@@ -38,6 +47,7 @@ async function draftAll() {
     await card.click();
   }
   await page.waitForURL(/#escalacao/, { timeout: 8000 });
+  await dismiss();
 }
 
 async function toSeason() {
@@ -46,12 +56,15 @@ async function toSeason() {
   await page.getByRole('button', { name: /pré-temporada/i }).click();
   await page.getByRole('button', { name: /Iniciar temporada/i }).click();
   await page.waitForURL(/#campeonato/);
+  await dismiss();
 }
 
 async function simulateAll() {
   await page.getByRole('button', { name: /Simular até o fim/i }).click();
   await page.getByRole('dialog').getByRole('button', { name: /^Simular$/ }).click();
   await page.waitForURL(/#resultado/);
+  await page.waitForTimeout(500);
+  await dismiss();
 }
 
 async function startFromHome(modeTitle) {

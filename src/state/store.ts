@@ -25,6 +25,7 @@ import { Rng, randomSeed, subSeed } from '../engine/rng';
 import { markChallenge, STORAGE_PREFIX } from './storage';
 import { recordRanking } from './ranking';
 import { migratePersisted } from './migrate';
+import { onAbandon, onDaysPlayed, onSeasonStart, onSquadComplete } from '../history/hooks';
 
 export type Phase = 'setup' | 'draft' | 'lineup' | 'captain' | 'preseason' | 'season' | 'finished';
 
@@ -141,6 +142,9 @@ export const useGame = create<GameState>()(
 
       startMode: (mode) => {
         const difficulty = get().settings.difficulty;
+        // começar outro jogo no meio de uma temporada: ela fica no histórico como abandonada
+        const previous = get().run;
+        if (previous) onAbandon(previous);
         if (mode === 'diario' || mode === 'semanal') {
           const ids = LEAGUE_CLUBS.map((c) => c.id);
           const ch = mode === 'diario' ? dailyChallenge(db, ids) : weeklyChallenge(ids);
@@ -213,7 +217,9 @@ export const useGame = create<GameState>()(
         if (!run?.draft) return;
         const draft = draftPick(db, run.draft, cardKey, slotId);
         const complete = isDraftComplete(draft);
-        set({ run: { ...run, draft, phase: complete ? 'lineup' : 'draft' } });
+        const next: Run = { ...run, draft, phase: complete ? 'lineup' : 'draft' };
+        set({ run: next });
+        if (complete) onSquadComplete(next);
       },
 
       swapSlots: (a, b) => {
@@ -271,7 +277,9 @@ export const useGame = create<GameState>()(
           stateClubs,
           stateCupName: userClub?.stateCup ?? 'Estadual',
         });
-        set({ run: { ...run, campaign, phase: 'season' } });
+        const next: Run = { ...run, campaign, phase: 'season' };
+        set({ run: next });
+        onSeasonStart(next);
       },
 
       completeUserMatch: (result) => {
@@ -280,6 +288,7 @@ export const useGame = create<GameState>()(
         const campaign = playDay(run.campaign, result);
         const next: Run = { ...run, campaign, phase: campaign.finished ? 'finished' : 'season' };
         set({ run: campaign.finished ? onFinished(next) : next });
+        onDaysPlayed(run, next);
       },
 
       simulateDay: () => {
@@ -288,13 +297,16 @@ export const useGame = create<GameState>()(
         const campaign = playDay(run.campaign);
         const next: Run = { ...run, campaign, phase: campaign.finished ? 'finished' : 'season' };
         set({ run: campaign.finished ? onFinished(next) : next });
+        onDaysPlayed(run, next);
       },
 
       simulateAll: () => {
         const run = get().run;
         if (!run?.campaign) return;
         const campaign = simulateRest(run.campaign);
-        set({ run: onFinished({ ...run, campaign, phase: 'finished' }) });
+        const next: Run = { ...run, campaign, phase: 'finished' };
+        set({ run: onFinished(next) });
+        onDaysPlayed(run, next);
       },
 
       markRankingSaved: () => {
@@ -302,7 +314,11 @@ export const useGame = create<GameState>()(
         if (run) set({ run: { ...run, rankingSaved: true } });
       },
 
-      abandon: () => set({ run: null }),
+      abandon: () => {
+        const run = get().run;
+        if (run) onAbandon(run);
+        set({ run: null });
+      },
 
       setSpeed: (speed) => set({ settings: { ...get().settings, speed } }),
     }),

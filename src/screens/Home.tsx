@@ -10,6 +10,59 @@ import type { GameMode } from '../engine/draft';
 import { LogoMark } from '../components/Logo';
 import { Crest } from '../components/Crest';
 import { Modal } from '../components/ui';
+import { GoogleButton, UserAvatar } from '../components/Account';
+import { useAuth } from '../cloud/auth';
+import { cloudEnabled } from '../cloud/config';
+import { useHistory } from '../history/store';
+import { ACHIEVEMENT_DEFS } from '../history/achievements';
+import { readJSON, writeJSON } from '../state/storage';
+
+/** Entrada da conta na página inicial: Google ou visitante. */
+function HomeAccount() {
+  const { status, user } = useAuth();
+  const data = useHistory((s) => s.data);
+  const [guestOk, setGuestOk] = useState(() => readJSON<boolean>('visitor-ok', false));
+  const hall = (
+    <a className="home-hall-link" href="#hall">
+      Hall dos Lendários · {data.titles.length} {data.titles.length === 1 ? 'título' : 'títulos'} · {data.unlocks.length}/{ACHIEVEMENT_DEFS.length} conquistas →
+    </a>
+  );
+  if (status === 'signed-in' && user) {
+    return (
+      <div className="home-account is-user">
+        <UserAvatar size={44} />
+        <div className="grow">
+          <strong>Olá, {user.name.split(' ')[0]}!</strong>
+          <span className="dim">Seu progresso é salvo automaticamente na nuvem.</span>
+          {hall}
+        </div>
+      </div>
+    );
+  }
+  if (!cloudEnabled || status === 'loading' || guestOk) {
+    return data.seasons.length ? <div className="home-account is-compact">{hall}</div> : null;
+  }
+  return (
+    <div className="home-account">
+      <div className="grow">
+        <strong>{status === 'expired' ? 'Sua sessão expirou' : 'Salve sua trajetória'}</strong>
+        <span className="dim">Entre com Google para guardar progresso, histórico, conquistas e recordes na nuvem e jogar em qualquer dispositivo.</span>
+      </div>
+      <div className="home-account-actions">
+        <GoogleButton />
+        <button
+          className="btn btn-link"
+          onClick={() => {
+            writeJSON('visitor-ok', true);
+            setGuestOk(true);
+          }}
+        >
+          Continuar como visitante
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const PHASE_LABEL: Record<string, string> = {
   setup: 'Preparação',
@@ -91,6 +144,7 @@ export function Home() {
               Como jogar
             </a>
           </div>
+          <HomeAccount />
           {run && run.phase !== 'finished' && (
             <div className="resume-card">
               {runClub && <Crest club={runClub} size={28} />}

@@ -10,7 +10,12 @@ import { topScorers } from '../engine/league';
 import { DIFFICULTIES } from '../engine/team';
 import { PlayerCard } from '../components/PlayerCard';
 import { TeamCrest } from '../components/TeamBadge';
-import { Confetti, Modal, NeedRun, useToast } from '../components/ui';
+import { Confetti, NeedRun, useToast } from '../components/ui';
+import { buildSeasonRecord } from '../history/record';
+import { useHistory } from '../history/store';
+import { ShareModal } from '../share/ShareModal';
+import { renderResultCard, resultFilename } from '../share/resultCard';
+import { usePlayerName } from '../cloud/profile';
 
 export function Final() {
   const run = useGame((s) => s.run);
@@ -35,6 +40,9 @@ function FinalInner() {
   const [name, setName] = useState(loadPlayerName());
   const [toast, showToast] = useToast();
   const [showShare, setShowShare] = useState(false);
+  const stored = useHistory((h) => h.data.seasons.find((x) => x.runId === run.id));
+  const record = useMemo(() => buildSeasonRecord(run, 'finished'), [run]);
+  const playerName = usePlayerName();
   const players = userPlayerStats(c);
   const top = [...players].sort((a, b) => b.goals - a.goals)[0];
   const best = [...players].sort((a, b) => b.rating - a.rating)[0];
@@ -105,24 +113,6 @@ function FinalInner() {
     grid.map((r) => (r === 'V' ? '🟩' : r === 'E' ? '🟨' : '🟥')).join(''),
     `Capitão: ${captain.player.name}`,
   ].join('\n');
-
-  const share = async () => {
-    // 1) compartilhamento nativo (celular)  2) copiar  3) mostrar o texto para copiar à mão
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: 'Onze BR Lendário PRAG', text: shareText });
-        return;
-      }
-    } catch (e) {
-      if ((e as DOMException)?.name === 'AbortError') return;
-    }
-    try {
-      await navigator.clipboard.writeText(shareText);
-      showToast('Resumo copiado! Cole onde quiser compartilhar.');
-    } catch {
-      setShowShare(true);
-    }
-  };
 
   const again = () => {
     const clubId = run.clubId;
@@ -228,9 +218,12 @@ function FinalInner() {
       </section>
 
       <div className="row wrap final-actions">
-        <button className="btn btn-gold btn-lg" onClick={share}>
-          Compartilhar
+        <button className="btn btn-gold btn-lg" onClick={() => setShowShare(true)} disabled={!record}>
+          Compartilhar resultado
         </button>
+        <a className="btn btn-ghost" href={`#temporada-${run.id}`}>
+          Ver no histórico
+        </a>
         <a className="btn btn-ghost" href="#estatisticas">
           Estatísticas
         </a>
@@ -241,27 +234,14 @@ function FinalInner() {
           Jogar de novo
         </button>
       </div>
-      {showShare && (
-        <Modal label="Compartilhar resultado" onClose={() => setShowShare(false)}>
-          <h3 style={{ fontSize: 24, marginBottom: 8 }}>Copie o resumo</h3>
-          <p className="muted" style={{ marginBottom: 10 }}>
-            Selecione o texto abaixo e copie para compartilhar.
-          </p>
-          <textarea
-            id="share-text"
-            className="share-text"
-            readOnly
-            value={shareText}
-            rows={7}
-            onFocus={(e) => e.currentTarget.select()}
-            autoFocus
-          />
-          <div className="row" style={{ justifyContent: 'flex-end', marginTop: 12 }}>
-            <button className="btn btn-gold" onClick={() => setShowShare(false)}>
-              Fechar
-            </button>
-          </div>
-        </Modal>
+      {showShare && record && (
+        <ShareModal
+          title="Compartilhar resultado"
+          filename={resultFilename(record)}
+          text={shareText}
+          render={() => renderResultCard({ season: stored && stored.status === 'finished' ? stored : record, details: record.details, playerName })}
+          onClose={() => setShowShare(false)}
+        />
       )}
       {toast}
       {run.clubId && <span className="sr-only">{CLUB_BY_ID[run.clubId].name}</span>}
