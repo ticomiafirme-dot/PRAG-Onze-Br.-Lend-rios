@@ -137,3 +137,15 @@ describe('esquema e segurança (RLS)', () => {
     expect((await as(B, 'select payload from public.game_saves')).rows).toEqual([]);
   });
 });
+
+describe('instalação em um passo', () => {
+  it('supabase/instalar.sql traz todas as migrações, na ordem', () => {
+    const all = fs.readFileSync('supabase/instalar.sql', 'utf8');
+    let at = -1;
+    for (const file of fs.readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).sort()) {
+      const pos = all.indexOf(fs.readFileSync(`supabase/migrations/${file}`, 'utf8'));
+      expect(pos, file).toBeGreaterThan(at);
+      at = pos;
+    }
+  });
+});

@@ -28,6 +28,8 @@ Sem as variáveis do Supabase, o jogo funciona inteiro **como visitante**: progr
 
 ## 2. Ligar o login com Google (opcional)
 
+Versão curta, com cada clique: [LIGAR-LOGIN.md](LIGAR-LOGIN.md).
+
 1. Siga o [CONTAS.md](CONTAS.md) para criar o projeto no Supabase, rodar as migrações e configurar o Google.
 2. No Netlify, em **Project configuration → Environment variables**, crie:
    - `VITE_SUPABASE_URL` = `https://<ref>.supabase.co`
