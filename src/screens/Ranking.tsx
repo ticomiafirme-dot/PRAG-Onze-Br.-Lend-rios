@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CLUB_BY_ID } from '../data/clubs';
-import { loadRanking, type RankingEntry } from '../state/storage';
+import { loadRanking, readJSON, writeJSON, type RankingEntry } from '../state/storage';
 import { flattenShared, getSharedRanking, type SharedEntry } from '../state/sharedRanking';
 import { brazilDateKey, brazilWeekKey } from '../engine/challenges';
 import { Crest } from '../components/Crest';
@@ -21,6 +21,27 @@ type Filter = 'geral' | 'diario' | 'semanal' | 'classico' | 'era' | 'mistura' | 
 type Scope = 'shared' | 'local' | 'global';
 type Status = 'idle' | 'loading' | 'live' | 'stale' | 'offline';
 
+type Diff = 'normal' | 'dificil' | 'lendario';
+const DIFFS: [Diff, string][] = [
+  ['normal', 'Normal'],
+  ['dificil', 'Difícil'],
+  ['lendario', 'Lendário'],
+];
+const DIFF_KEY = 'ranking-dificuldade';
+/** Desafios têm dificuldade fixa (Diário: Normal; Semanal: Difícil): não precisam de sub-ranking. */
+const hasDiffTabs = (f: Filter) => f !== 'diario' && f !== 'semanal';
+
+/** Melhor posição de quem está conectado no sub-ranking da dificuldade de cada campanha. */
+export function bestPositionByDifficulty<T extends { difficulty: string; isMe?: boolean; id: string }>(list: T[]): { position: number; runId: string } | null {
+  let best: { position: number; runId: string } | null = null;
+  const seen: Record<string, number> = {};
+  for (const e of list) {
+    const pos = (seen[e.difficulty] = (seen[e.difficulty] ?? 0) + 1);
+    if (e.isMe && (!best || pos < best.position)) best = { position: pos, runId: e.id };
+  }
+  return best;
+}
+
 const FILTERS: [Filter, string][] = [
   ['geral', 'Geral'],
   ['diario', 'Desafio de hoje'],
@@ -33,6 +54,14 @@ const FILTERS: [Filter, string][] = [
 
 export function Ranking({ board = 'campanhas' }: { board?: 'campanhas' | 'conquistas' }) {
   const [filter, setFilter] = useState<Filter>('geral');
+  const [diff, setDiffState] = useState<Diff>(() => {
+    const d = readJSON<string>(DIFF_KEY, 'normal');
+    return d === 'dificil' || d === 'lendario' ? d : 'normal';
+  });
+  const setDiff = (d: Diff) => {
+    setDiffState(d);
+    writeJSON(DIFF_KEY, d);
+  };
   const [scope, setScope] = useState<Scope>('local');
   const [sharedOn, setSharedOn] = useState(false);
   const [shared, setShared] = useState<SharedEntry[]>([]);
@@ -99,8 +128,8 @@ export function Ranking({ board = 'campanhas' }: { board?: 'campanhas' | 'conqui
       if (list) {
         setGlobal(list);
         setGlobalStatus('live');
-        const mine = list.findIndex((e) => e.isMe);
-        if (mine >= 0) onRankingPosition(mine + 1, list[mine].id);
+        const best = bestPositionByDifficulty(list);
+        if (best) onRankingPosition(best.position, best.runId);
       } else setGlobalStatus('offline');
     });
     return () => {
@@ -109,12 +138,24 @@ export function Ranking({ board = 'campanhas' }: { board?: 'campanhas' | 'conqui
   }, [today, week]);
 
   const source: (RankingEntry & { uid?: string; who?: string; title?: string | null; isMe?: boolean })[] = scope === 'global' ? global : scope === 'shared' ? shared : local;
-  const list = source.filter((e) => {
+  const inFilter = source.filter((e) => {
     if (filter === 'geral') return true;
     if (filter === 'diario') return e.challengeKey === today;
     if (filter === 'semanal') return e.challengeKey === week;
     return e.mode === filter;
   });
+  const diffTabs = hasDiffTabs(filter);
+  // cada dificuldade tem o próprio ranking: Normal, Difícil e Lendário não se misturam
+  const list = diffTabs ? inFilter.filter((e) => e.difficulty === diff) : inFilter;
+  const diffLabel = DIFFS.find(([d]) => d === diff)![1];
+  type Entry = (typeof source)[number];
+  const whoOf = (e: Entry) => (scope === 'global' ? (e.who ?? 'Jogador') : e.uid ? (names[e.uid] ?? 'Jogador') : localName(e));
+  const mineOf = (e: Entry) => (scope === 'global' ? !!e.isMe : !e.uid && isMine(e));
+  const titleOf = (e: Entry) => (scope === 'global' ? (e.title ?? null) : undefined);
+  const linkOf = (e: Entry) =>
+    scope === 'global' ? `/campanha/${e.id}` : scope === 'local' && history.some((h) => h.runId === e.id) ? `/temporada/${e.id}` : null;
+  // o 1º colocado de cada dificuldade (a lista já vem ordenada pelos critérios do ranking)
+  const leaders = DIFFS.map(([d, label]) => ({ d, label, e: inFilter.find((x) => x.difficulty === d) ?? null }));
 
   const boardTabs = (
     <div className="tabs" role="tablist" aria-label="Tipo de ranking" style={{ marginBottom: 14 }}>
@@ -190,18 +231,73 @@ export function Ranking({ board = 'campanhas' }: { board?: 'campanhas' | 'conqui
       )}
       {(scope === 'local' || (!sharedOn && !cloudEnabled)) && <p className="dim" style={{ marginBottom: 10, fontSize: 13 }}>Ranking salvo neste dispositivo.</p>}
 
-      <div className="tabs" style={{ marginBottom: 14 }}>
+      <div className="tabs" style={{ marginBottom: diffTabs ? 10 : 14 }}>
         {FILTERS.map(([id, label]) => (
           <button key={id} className="tab" aria-selected={filter === id} onClick={() => setFilter(id)}>
             {label}
           </button>
         ))}
       </div>
+      {diffTabs ? (
+        <div className="row wrap diff-tabs" style={{ marginBottom: 14 }}>
+          <span className="dim diff-tabs-label">Dificuldade</span>
+          <div className="tabs" role="tablist" aria-label="Ranking por dificuldade">
+            {DIFFS.map(([d, label]) => (
+              <button key={d} className={`tab diff-tab diff-${d}`} role="tab" aria-selected={diff === d} onClick={() => setDiff(d)}>
+                {label} <span className="dim">{inFilter.filter((e) => e.difficulty === d).length}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {diffTabs && leaders.some((l) => l.e) && (
+        <div className="rank-leaders" aria-label="Líder de cada dificuldade">
+          {leaders.map(({ d, label, e }) => (
+            <button
+              key={d}
+              className={`rank-leader diff-${d} ${diff === d ? 'is-active' : ''}`}
+              onClick={() => setDiff(d)}
+              aria-pressed={diff === d}
+              aria-label={e ? `Líder do ${label}: ${whoOf(e)}, ${e.points} pontos. Ver o ranking do ${label}` : `${label}: ninguém ainda`}
+            >
+              <span className="rank-leader-head">
+                <span className="rank-leader-crown" aria-hidden="true">
+                  👑
+                </span>
+                Líder · {label}
+              </span>
+              {e ? (
+                <>
+                  <span className="rank-leader-who">
+                    <RankAvatar e={e} mine={mineOf(e)} title={titleOf(e)} size={40} />
+                    <span className="rank-leader-name">
+                      <strong>{whoOf(e)}</strong>
+                      <span className="dim">{e.teamName}</span>
+                    </span>
+                  </span>
+                  <span className="rank-leader-pts">
+                    <strong>{e.points}</strong> pts · {e.wins}-{e.draws}-{e.losses}
+                  </span>
+                </>
+              ) : (
+                <span className="dim rank-leader-empty">Ninguém ainda. Seja o primeiro!</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+      {!diffTabs && (
+        <p className="dim" style={{ marginTop: -6, marginBottom: 14, fontSize: 13 }}>
+          {filter === 'diario' ? 'O Desafio Diário é sempre no nível Normal.' : 'O Desafio Semanal é sempre no nível Difícil.'}
+        </p>
+      )}
       {list.length === 0 ? (
         <div className="empty panel">
           {(scope === 'shared' && status === 'loading') || (scope === 'global' && globalStatus === 'loading')
             ? 'Carregando o ranking de todos os jogadores…'
-            : `Nenhuma campanha registrada ${filter === 'geral' ? 'ainda' : 'nesta categoria'}. Termine uma temporada para entrar no ranking.`}
+            : diffTabs
+              ? `Nenhuma campanha no nível ${diffLabel} ${filter === 'geral' ? 'ainda' : 'nesta categoria'}. Termine uma temporada nesse nível para entrar neste ranking.`
+              : 'Nenhuma campanha registrada nesta categoria. Termine uma temporada para entrar no ranking.'}
         </div>
       ) : (
         <div className="table-wrap">
@@ -222,15 +318,7 @@ export function Ranking({ board = 'campanhas' }: { board?: 'campanhas' | 'conqui
             </thead>
             <tbody>
               {list.slice(0, 200).map((e, i) => (
-                <Row
-                  key={`${scope}-${e.uid ?? ''}-${e.id}`}
-                  e={e}
-                  i={i}
-                  who={scope === 'global' ? (e.who ?? 'Jogador') : e.uid ? (names[e.uid] ?? 'Jogador') : localName(e)}
-                  mine={scope === 'global' ? !!e.isMe : !e.uid && isMine(e)}
-                  title={scope === 'global' ? (e.title ?? null) : undefined}
-                  to={scope === 'global' ? `/campanha/${e.id}` : scope === 'local' && history.some((h) => h.runId === e.id) ? `/temporada/${e.id}` : null}
-                />
+                <Row key={`${scope}-${e.uid ?? ''}-${e.id}`} e={e} i={i} who={whoOf(e)} mine={mineOf(e)} title={titleOf(e)} to={linkOf(e)} />
               ))}
             </tbody>
           </table>
@@ -256,13 +344,7 @@ function Row({ e, i, who, mine, title, to }: { e: RankingEntry; i: number; who: 
       <td className="stat-num">{i + 1}</td>
       <td className="l">
         <span className="rank-who">
-          {mine ? (
-            <UserAvatar size={34} />
-          ) : title && isOwnerAvatar(e.avatar) ? (
-            <img className="pavatar" src={ownerAvatarUrl()} width={34} height={34} alt="" />
-          ) : (
-            <PlayerFaceByKey cardKey={e.avatar} size={34} />
-          )}
+          <RankAvatar e={e} mine={mine} title={title} size={34} />
           <span className="rank-who-name">
             <strong>{who}</strong>
             {mine ? <StaffBadge small /> : title ? <StaffBadge small title={title} /> : null}
@@ -297,4 +379,10 @@ function Row({ e, i, who, mine, title, to }: { e: RankingEntry; i: number; who: 
       <td className="dim">{new Date(e.date).toLocaleDateString('pt-BR')}</td>
     </tr>
   );
+}
+
+function RankAvatar({ e, mine, title, size }: { e: RankingEntry; mine: boolean; title?: string | null; size: number }) {
+  if (mine) return <UserAvatar size={size} />;
+  if (title && isOwnerAvatar(e.avatar)) return <img className="pavatar" src={ownerAvatarUrl()} width={size} height={size} alt="" />;
+  return <PlayerFaceByKey cardKey={e.avatar} size={size} />;
 }

@@ -114,7 +114,7 @@ class SyncEngine {
     );
     // conquistas novas para quem já tinha cumprido (e o top 10 do ranking global)
     void grantRetroactive();
-    void myBestPosition(10)
+    void myBestPosition()
       .then((r) => r && !this.stopped && onRankingPosition(r.position, r.runId))
       .catch(() => undefined);
     const onHide = () => document.visibilityState === 'hidden' && void this.flush();

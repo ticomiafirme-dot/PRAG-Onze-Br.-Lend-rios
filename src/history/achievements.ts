@@ -673,8 +673,8 @@ ACHIEVEMENT_DEFS.push(
   {
     id: 'top-10-11brl',
     name: 'Top 10 do 11BRL',
-    objective: 'Coloque uma temporada no top 10 do ranking global (é preciso entrar com a sua conta).',
-    message: ({ value }) => `${value}º lugar no ranking global do 11BRL!`,
+    objective: 'Coloque uma temporada no top 10 do ranking de todos os jogadores, na dificuldade em que jogou (é preciso entrar com a sua conta).',
+    message: ({ value }) => `${value}º lugar no ranking de todos os jogadores do 11BRL!`,
     icon: 'podium',
     tier: 'lendaria',
     triggers: ['ranking'],

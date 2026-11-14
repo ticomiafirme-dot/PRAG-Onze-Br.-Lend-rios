@@ -86,14 +86,22 @@ export async function loadGlobalRanking(keys: { today: string; week: string; dat
   }));
 }
 
-/** Melhor posição do jogador logado entre as `lim` primeiras do ranking global. */
-export async function myBestPosition(lim = 10): Promise<{ position: number; runId: string } | null> {
+/**
+ * Melhor posição do jogador logado no ranking de todos, dentro da
+ * dificuldade de cada campanha (Normal, Difícil e Lendário têm rankings próprios).
+ */
+export async function myBestPosition(lim = 500): Promise<{ position: number; runId: string } | null> {
   const sb = getSupabase();
   if (!sb) return null;
   const { data, error } = await sb.rpc('ranking_global', { lim });
   if (error || !Array.isArray(data)) return null;
-  const i = (data as Row[]).findIndex((r) => r.is_me);
-  return i >= 0 ? { position: i + 1, runId: (data as Row[])[i].run_id } : null;
+  let best: { position: number; runId: string } | null = null;
+  const seen: Record<string, number> = {};
+  for (const r of data as Row[]) {
+    const pos = (seen[r.difficulty] = (seen[r.difficulty] ?? 0) + 1);
+    if (r.is_me && (!best || pos < best.position)) best = { position: pos, runId: r.run_id };
+  }
+  return best;
 }
 
 export interface AchievementRankingEntry {

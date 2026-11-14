@@ -14,7 +14,7 @@ Inspirado nas mecânicas de draft por sorteio do Perfect Season FC, com identida
 6. **Capitão** — +3 de overall, faixa de capitão e química em dobro.
 7. **Pré-temporada** — força por setor, química e os 19 rivais (cada um escalado com lendas da própria história).
 8. **Brasileirão** — 38 rodadas em turno e returno. Assista às partidas em 1x/2x/4x ou pule para o resultado.
-9. **Estatísticas, resultado final e ranking** (de campanhas e de conquistas).
+9. **Estatísticas, resultado final e ranking** — de campanhas (um ranking para cada dificuldade: Normal, Difícil e Lendário, com o líder de cada uma em destaque) e de conquistas.
 10. **Arte do resultado e da escalação** — cards PNG 1080 × 1350 gerados com os dados reais da temporada (o resultado e o time em campo na formação usada, com avatares, números, overall e capitão): baixar, copiar a imagem ou compartilhar direto (celular).
 
 ### Sua trajetória
