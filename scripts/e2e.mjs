@@ -76,6 +76,7 @@ async function run(label, contextOpts) {
   await page.waitForURL(/#draft/);
   step('draft');
   let used = 0;
+  let chooserSeen = 0;
   for (let round = 0; round < 11; round++) {
     await page.waitForSelector('.roulette.is-done', { timeout: 8000 });
     if (round === 0) await shot('05-draft');
@@ -116,12 +117,21 @@ async function run(label, contextOpts) {
     if (!faces.length || faces.some((f) => !f.ok || !f.svg)) errors.push(`avatares das cartas do draft: ${JSON.stringify(faces.slice(0, 3))}`);
     await card.click();
     await page.waitForTimeout(150);
+    if (await page.locator('.pos-chooser').count()) {
+      // jogador de mais de uma posição: o usuário escolhe onde escalar
+      chooserSeen++;
+      const opts = await page.locator('.pos-option').count();
+      if (opts < 2) errors.push(`escolha de posição com ${opts} opção`);
+      await page.locator('.pos-option').last().click();
+      await page.waitForTimeout(150);
+    }
     if (target) {
       // a vaga tocada agora tem um jogador
       const filled = await page.locator('.draft-pitch .pitch-slot').nth(target.index).locator('.pcard').count();
       if (!filled) errors.push(`o jogador não entrou na vaga ${target.cat} tocada`);
     }
   }
+  console.log(`[${label}] escolha de posição apareceu ${chooserSeen}x no draft`);
   await page.waitForSelector('.draft-done', { timeout: 8000 });
   await shot('06-draft-completo');
   await page.waitForURL(/#escalacao/, { timeout: 8000 });
@@ -180,6 +190,25 @@ async function run(label, contextOpts) {
   await page.waitForTimeout(800);
   if (!(await page.locator('.unlock-overlay').count())) errors.push('nenhuma conquista comemorada ao fim da primeira temporada (Estreia)');
   await shot('14a-conquista');
+  // compartilhar a conquista: a janela de compartilhar abre POR CIMA da comemoração
+  if (await page.locator('.unlock-overlay').getByRole('button', { name: /Compartilhar conquista/i }).count()) {
+    await page.locator('.unlock-overlay').getByRole('button', { name: /Compartilhar conquista/i }).first().click();
+    await page.waitForSelector('.share-preview img', { timeout: 15000 });
+    const onTop = await page.evaluate(() => {
+      const btn = [...document.querySelectorAll('.share-actions button')].find((b) => /Baixar arte/.test(b.textContent ?? ''));
+      if (!btn) return 'sem botão Baixar arte';
+      const r = btn.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return btn.contains(hit) ? 'ok' : `coberto por ${hit?.className}`;
+    });
+    if (onTop !== 'ok') errors.push(`janela de compartilhar a conquista escondida: ${onTop}`);
+    for (const name of [/Baixar arte/, /Copiar imagem/, /Compartilhar imagem/]) {
+      if (!(await page.getByRole('button', { name }).count())) errors.push(`compartilhar conquista sem o botão ${name}`);
+    }
+    await shot('14b-compartilhar-conquista');
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+  } else errors.push('comemoração da conquista sem o botão Compartilhar conquista');
   await dismiss();
   await shot('14-resultado');
 

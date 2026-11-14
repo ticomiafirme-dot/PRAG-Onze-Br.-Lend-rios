@@ -264,6 +264,8 @@ await A.page.getByRole('button', { name: /Iniciar draft/i }).click();
 for (let r = 0; r < 5; r++) {
   await A.page.waitForSelector('.roulette.is-done', { timeout: 8000 });
   await A.page.locator('.offers button.pcard').first().click();
+  await A.page.waitForTimeout(120);
+  if (await A.page.locator('.pos-chooser').count()) await A.page.locator('.pos-option').first().click();
   await A.page.waitForTimeout(150);
 }
 await A.page.waitForTimeout(400);
@@ -293,6 +295,8 @@ await B.shot('04-celular-continua');
 for (let r = 0; r < 6; r++) {
   await B.page.waitForSelector('.roulette.is-done', { timeout: 8000 });
   await B.page.locator('.offers button.pcard').first().click();
+  await B.page.waitForTimeout(120);
+  if (await B.page.locator('.pos-chooser').count()) await B.page.locator('.pos-option').first().click();
   await B.page.waitForTimeout(150);
 }
 await B.page.waitForURL(/#escalacao/, { timeout: 8000 });
@@ -374,6 +378,8 @@ await B.page.getByRole('button', { name: /Iniciar draft/i }).click();
 for (let r = 0; r < 2; r++) {
   await B.page.waitForSelector('.roulette.is-done', { timeout: 8000 });
   await B.page.locator('.offers button.pcard').first().click();
+  await B.page.waitForTimeout(120);
+  if (await B.page.locator('.pos-chooser').count()) await B.page.locator('.pos-option').first().click();
   await B.page.waitForTimeout(150);
 }
 await B.page.waitForTimeout(300);
@@ -389,6 +395,8 @@ await A.page.locator('.formation-card', { hasText: '4-4-2' }).click();
 await A.page.getByRole('button', { name: /Iniciar draft/i }).click();
 await A.page.waitForSelector('.roulette.is-done', { timeout: 8000 });
 await A.page.locator('.offers button.pcard').first().click();
+  await A.page.waitForTimeout(120);
+  if (await A.page.locator('.pos-chooser').count()) await A.page.locator('.pos-option').first().click();
 await A.page.waitForTimeout(200);
 await A.page.locator('.header-login .btn-google').click();
 await A.page.waitForSelector('.conflict-option', { timeout: 15000 });

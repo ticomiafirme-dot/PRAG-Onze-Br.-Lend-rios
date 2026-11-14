@@ -45,6 +45,8 @@ async function draftAll() {
       continue;
     }
     await card.click();
+    await page.waitForTimeout(120);
+    if (await page.locator('.pos-chooser').count()) await page.locator('.pos-option').first().click();
   }
   await page.waitForURL(/#escalacao/, { timeout: 8000 });
   await dismiss();

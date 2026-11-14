@@ -10,7 +10,7 @@ import { lineupOf, MODE_INFO, useGame } from '../state/store';
 import { Pitch } from '../components/Pitch';
 import { PlayerCard } from '../components/PlayerCard';
 import { Crest } from '../components/Crest';
-import { NeedRun, chemColor, useToast } from '../components/ui';
+import { Modal, NeedRun, chemColor, useToast } from '../components/ui';
 
 type Tab = Position | 'TODOS';
 
@@ -33,6 +33,8 @@ function DraftInner() {
   // aba escolhida ("Todos" ou uma categoria) e, opcionalmente, a vaga tocada no campo
   const [activeTab, setActiveTab] = useState<Tab>('TODOS');
   const [activeSlot, setActiveSlot] = useState<string | null>(null);
+  /** Jogador que atua em mais de uma categoria: o usuário escolhe onde escalar. */
+  const [choosing, setChoosing] = useState<{ offer: OfferEntry; options: Position[] } | null>(null);
   const [lastPicked, setLastPicked] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(true);
 
@@ -72,8 +74,26 @@ function DraftInner() {
   const openInCat = activeCat ? openSlots(draft).filter((s) => s.pos === activeCat).length : 0;
 
   const doPick = (offer: OfferEntry) => {
+    // pela lista geral, sem vaga tocada no campo: se ele pode entrar em mais de uma
+    // categoria com vaga livre, pergunta onde escalar em vez de decidir sozinho
+    if (!activeCat && !activeSlot && offer.also.length) {
+      const options = [offer.pos, ...offer.also].filter((p) => firstOpenSlot(draft, p));
+      if (options.length > 1) {
+        setChoosing({ offer, options });
+        return;
+      }
+      if (options.length === 1 && options[0] !== offer.pos) {
+        placeIn(offer, options[0]);
+        return;
+      }
+    }
+    placeIn(offer, offer.pos);
+  };
+
+  const placeIn = (offer: OfferEntry, pos: Position) => {
+    setChoosing(null);
     const card = db.card(offer.key);
-    const slot = targetFor(offer.pos);
+    const slot = targetFor(pos);
     if (!slot) return;
     try {
       pickCard(card.key, slot.id);
@@ -278,6 +298,33 @@ function DraftInner() {
           )}
         </div>
       </div>
+      {choosing && (
+        <Modal label={`Onde escalar ${db.card(choosing.offer.key).player.name}?`} onClose={() => setChoosing(null)}>
+          <div className="pos-chooser">
+            <PlayerCard card={db.card(choosing.offer.key)} size="sm" showClub />
+            <div className="pos-chooser-body">
+              <h3>Onde escalar {db.card(choosing.offer.key).player.name}?</h3>
+              <p className="dim">Ele pode jogar em mais de uma posição. Escolha a vaga:</p>
+              <div className="pos-chooser-options">
+                {choosing.options.map((p) => {
+                  const free = openSlots(draft).filter((sl) => sl.pos === p).length;
+                  return (
+                    <button key={p} className="btn btn-ghost pos-option" onClick={() => placeIn(choosing.offer, p)}>
+                      <strong>{POSITION_NAMES[p]}</strong>
+                      <span className="dim">
+                        {p} · {free} {free === 1 ? 'vaga livre' : 'vagas livres'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <button className="btn btn-link btn-sm" onClick={() => setChoosing(null)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
       {toast}
     </div>
   );
