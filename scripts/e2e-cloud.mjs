@@ -101,6 +101,28 @@ class FakeSupabase {
     }
     if (url.pathname === '/auth/v1/logout') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*' } });
 
+    // ----- RPC: ranking de conquistas (mesma pontuação da função do banco)
+    if (url.pathname === '/rest/v1/rpc/ranking_conquistas') {
+      const me = this.uid(req);
+      const W = { bronze: 1, prata: 2, ouro: 3, lendaria: 5 };
+      const by = new Map();
+      for (const a of this.tables.user_achievements) {
+        const r = by.get(a.user_id) ?? { user_id: a.user_id, points: 0, total: 0, bronze: 0, prata: 0, ouro: 0, lendaria: 0 };
+        r.points += W[a.tier] ?? 0;
+        r.total++;
+        r[a.tier]++;
+        by.set(a.user_id, r);
+      }
+      const out = [...by.values()]
+        .sort((x, y) => y.points - x.points || y.lendaria - x.lendaria || y.ouro - x.ouro || y.total - x.total)
+        .map(({ user_id, ...r }) => {
+          const p = this.tables.profiles.find((x) => x.id === user_id);
+          const best = this.tables.seasons.filter((x) => x.user_id === user_id && x.status === 'finished').sort((x, y) => y.points - x.points)[0];
+          return { ...r, is_me: user_id === me, display_name: p?.display_name, game_avatar: p?.game_avatar ?? null, title: null, best_run_id: best?.run_id ?? null };
+        });
+      return json(200, out);
+    }
+
     // ----- REST
     const m = url.pathname.match(/^\/rest\/v1\/(\w+)$/);
     if (!m || !this.tables[m[1]]) return json(404, { message: `não simulado: ${url.pathname}` });
@@ -339,6 +361,15 @@ if (owner !== 'Jogador Teste') errors.push(`Hall sem o nome do jogador: ${owner}
 await A.shot('06-hall-sincronizado');
 await A.page.goto(BASE + '#conquistas');
 await A.page.waitForSelector('.ach-card.is-unlocked');
+await A.page.getByRole('button', { name: 'Ranking de conquistas' }).click();
+await A.page.waitForURL(/#ranking-conquistas/);
+await A.page.waitForSelector('table.ach-rank tbody tr.is-me', { timeout: 10000 });
+const W = { bronze: 1, prata: 2, ouro: 3, lendaria: 5 };
+const expected = backend.tables.user_achievements.reduce((a, x) => a + (W[x.tier] ?? 0), 0);
+const shown = Number((await A.page.locator('table.ach-rank tr.is-me .ach-rank-pts').textContent()).trim());
+if (shown !== expected) errors.push(`ranking de conquistas: ${shown} pontos na tela, esperado ${expected}`);
+await A.shot('06b-ranking-conquistas');
+step(`ranking de conquistas com a pontuação por raridade (${shown} pontos)`);
 
 // ---------- Foto de perfil com avatar de jogador, sincronizada entre aparelhos
 await A.page.goto(BASE + '#perfil');

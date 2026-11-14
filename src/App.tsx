@@ -96,6 +96,9 @@ export function App() {
     case '/ranking':
       screen = <Ranking />;
       break;
+    case '/ranking-conquistas':
+      screen = <Ranking board="conquistas" />;
+      break;
     case '/como-jogar':
       screen = <HowTo />;
       break;

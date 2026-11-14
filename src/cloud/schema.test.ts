@@ -222,6 +222,39 @@ describe('ranking global', () => {
   });
 });
 
+describe('ranking de conquistas', () => {
+  it('pontua bronze 1, prata 2, ouro 3, lendária 5 e mostra a todos, sem e-mail', async () => {
+    const unlock = (user: string, id: string, tier: string, at: string) =>
+      as(user, `insert into public.user_achievements (user_id, achievement_id, name, tier, unlocked_at) values ($1, $2, $2, $3, $4)`, [user, id, tier, at]);
+    await unlock(A, 'rk-lendaria', 'lendaria', '2026-11-05T12:00:00Z');
+    await unlock(A, 'rk-bronze', 'bronze', '2026-11-05T12:00:00Z');
+    await unlock(B, 'rk-ouro', 'ouro', '2026-11-05T12:00:00Z');
+    await unlock(B, 'rk-prata', 'prata', '2026-11-05T12:00:00Z');
+    await unlock(B, 'rk-bronze', 'bronze', '2026-11-05T12:00:00Z');
+
+    const visitante = (await as(null, 'select * from public.ranking_conquistas(50)')).rows as Record<string, unknown>[];
+    const a = visitante.find((r) => r.display_name === 'Jogador A')!;
+    const nomeB = ((await db.query('select display_name from public.profiles where id = $1', [B])).rows[0] as { display_name: string }).display_name;
+    const b = visitante.find((r) => r.display_name === nomeB)!;
+    // pontos de cada um, contando o que já tinham antes deste teste
+    const pontos = async (user: string) =>
+      Number(
+        ((await db.query(`select coalesce(sum(case tier when 'bronze' then 1 when 'prata' then 2 when 'ouro' then 3 else 5 end), 0) as p from public.user_achievements where user_id = $1`, [user])).rows[0] as { p: number }).p,
+      );
+    expect(a.points).toBe(await pontos(A));
+    expect(b.points).toBe(await pontos(B));
+    expect(Number(a.lendaria)).toBeGreaterThanOrEqual(1);
+    expect(a.is_me).toBe(false);
+    expect(a.best_run_id).toBe('rk-a1');
+    expect(Object.keys(a)).not.toContain('email');
+    expect(Object.keys(a)).not.toContain('user_id');
+    // ordenado pela pontuação
+    const pts = visitante.map((r) => Number(r.points));
+    expect(pts).toEqual([...pts].sort((x, y) => y - x));
+    expect(((await as(A, 'select is_me, display_name from public.ranking_conquistas(50)')).rows as Record<string, unknown>[]).find((r) => r.is_me)?.display_name).toBe('Jogador A');
+  });
+});
+
 describe('instalação em um passo', () => {
   it('supabase/instalar.sql traz todas as migrações, na ordem', () => {
     const all = fs.readFileSync('supabase/instalar.sql', 'utf8');

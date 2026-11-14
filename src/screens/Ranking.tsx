@@ -15,6 +15,7 @@ import { isOwnerAvatar, ownerAvatarUrl } from '../avatars/owner';
 import { navigate } from '../router';
 import { useHistory } from '../history/store';
 import { onRankingPosition } from '../history/hooks';
+import { AchievementRanking } from './AchievementRanking';
 
 type Filter = 'geral' | 'diario' | 'semanal' | 'classico' | 'era' | 'mistura' | 'triplice';
 type Scope = 'shared' | 'local' | 'global';
@@ -30,7 +31,7 @@ const FILTERS: [Filter, string][] = [
   ['triplice', 'Tríplice Coroa'],
 ];
 
-export function Ranking() {
+export function Ranking({ board = 'campanhas' }: { board?: 'campanhas' | 'conquistas' }) {
   const [filter, setFilter] = useState<Filter>('geral');
   const [scope, setScope] = useState<Scope>('local');
   const [sharedOn, setSharedOn] = useState(false);
@@ -115,6 +116,33 @@ export function Ranking() {
     return e.mode === filter;
   });
 
+  const boardTabs = (
+    <div className="tabs" role="tablist" aria-label="Tipo de ranking" style={{ marginBottom: 14 }}>
+      <button className="tab" role="tab" aria-selected={board === 'campanhas'} onClick={() => navigate('/ranking', { replace: true })}>
+        Campanhas
+      </button>
+      <button className="tab" role="tab" aria-selected={board === 'conquistas'} onClick={() => navigate('/ranking-conquistas', { replace: true })}>
+        Conquistas
+      </button>
+    </div>
+  );
+
+  if (board === 'conquistas')
+    return (
+      <div className="page">
+        <div className="page-head">
+          <div>
+            <div className="eyebrow">Quem tem mais medalhas</div>
+            <h1>Ranking</h1>
+            <p className="muted">Bronze vale 1 ponto, prata 2, ouro 3 e lendária 5.</p>
+          </div>
+          <BackLink to="/" />
+        </div>
+        {boardTabs}
+        <AchievementRanking />
+      </div>
+    );
+
   return (
     <div className="page">
       <div className="page-head">
@@ -125,6 +153,7 @@ export function Ranking() {
         </div>
         <BackLink to="/" />
       </div>
+      {boardTabs}
 
       {cloudEnabled && (
         <div className="row wrap" style={{ marginBottom: 10 }}>

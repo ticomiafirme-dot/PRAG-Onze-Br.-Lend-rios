@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ACHIEVEMENT_DEFS, TIER_LABEL, TIER_ORDER, type AchievementTier } from '../history/achievements';
+import { ACHIEVEMENT_DEFS, achievementScore, TIER_LABEL, TIER_ORDER, type AchievementTier } from '../history/achievements';
+import { navigate } from '../router';
 import { decadesLabel } from '../history/record';
 import { useHistory } from '../history/store';
 import type { UnlockRecord } from '../history/types';
@@ -70,6 +71,12 @@ export function Conquistas() {
           <span style={{ width: `${(100 * unlocked) / Math.max(1, rows.length)}%` }} />
         </div>
         <div className="ach-tiers">
+          <span className="chip chip-gold" title="Bronze 1 · Prata 2 · Ouro 3 · Lendária 5">
+            {achievementScore(data.unlocks)} pontos
+          </span>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/ranking-conquistas')}>
+            Ranking de conquistas
+          </button>
           {TIER_ORDER.map((t) => {
             const all = rows.filter((r) => r.tier === t);
             return (

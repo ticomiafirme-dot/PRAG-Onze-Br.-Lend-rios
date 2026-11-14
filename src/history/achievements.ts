@@ -70,6 +70,12 @@ export interface AchievementDef {
 
 export const TIER_LABEL: Record<AchievementTier, string> = { bronze: 'Bronze', prata: 'Prata', ouro: 'Ouro', lendaria: 'Lendária' };
 export const TIER_ORDER: AchievementTier[] = ['lendaria', 'ouro', 'prata', 'bronze'];
+/** Pontos de cada raridade no ranking de conquistas. */
+export const TIER_POINTS: Record<AchievementTier, number> = { bronze: 1, prata: 2, ouro: 3, lendaria: 5 };
+/** Pontuação de conquistas (bronze 1, prata 2, ouro 3, lendária 5). */
+export function achievementScore(unlocks: { tier: AchievementTier }[]): number {
+  return unlocks.reduce((a, u) => a + (TIER_POINTS[u.tier] ?? 0), 0);
+}
 
 const done = (runId: string | null, value: number | null = null, detail: string | null = null): AchievementResult => ({ runId, value, detail });
 const maxOf = (xs: number[]) => (xs.length ? Math.max(...xs) : null);

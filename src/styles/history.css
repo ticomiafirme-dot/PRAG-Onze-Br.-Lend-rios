@@ -1875,3 +1875,45 @@ table.data tr.is-link:focus-visible {
     width: 100%;
   }
 }
+
+/* ------------------------------------------------------ ranking de conquistas */
+.tier-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  vertical-align: middle;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.tier-dot.tier-bronze {
+  background: #e3a26a;
+}
+
+.tier-dot.tier-prata {
+  background: #dfe4ea;
+}
+
+.tier-dot.tier-ouro {
+  background: var(--gold-400);
+}
+
+.tier-dot.tier-lendaria {
+  background: linear-gradient(135deg, #38bdf8, #ffcf1f);
+}
+
+.ach-rank .ach-rank-pts {
+  color: var(--gold-400);
+  font-size: 18px;
+}
+
+.ach-rank tr.is-me td {
+  background: rgba(255, 207, 31, 0.07);
+}
+
+.ach-rank-tier {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}

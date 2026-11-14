@@ -95,3 +95,38 @@ export async function myBestPosition(lim = 10): Promise<{ position: number; runI
   const i = (data as Row[]).findIndex((r) => r.is_me);
   return i >= 0 ? { position: i + 1, runId: (data as Row[])[i].run_id } : null;
 }
+
+export interface AchievementRankingEntry {
+  isMe: boolean;
+  who: string;
+  avatar: string | null;
+  title: string | null;
+  points: number;
+  total: number;
+  bronze: number;
+  prata: number;
+  ouro: number;
+  lendaria: number;
+  bestRunId: string | null;
+}
+
+/** Ranking de conquistas (pontos por raridade), o mesmo para todos. */
+export async function loadAchievementRanking(lim = 300): Promise<AchievementRankingEntry[] | null> {
+  const sb = getSupabase();
+  if (!sb) return null;
+  const { data, error } = await sb.rpc('ranking_conquistas', { lim });
+  if (error || !Array.isArray(data)) return null;
+  return (data as Record<string, unknown>[]).map((r) => ({
+    isMe: !!r.is_me,
+    who: (r.display_name as string) || 'Jogador',
+    avatar: (r.game_avatar as string) ?? null,
+    title: (r.title as string) ?? null,
+    points: Number(r.points ?? 0),
+    total: Number(r.total ?? 0),
+    bronze: Number(r.bronze ?? 0),
+    prata: Number(r.prata ?? 0),
+    ouro: Number(r.ouro ?? 0),
+    lendaria: Number(r.lendaria ?? 0),
+    bestRunId: (r.best_run_id as string) ?? null,
+  }));
+}
