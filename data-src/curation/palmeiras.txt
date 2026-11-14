@@ -87,3 +87,7 @@ Felipe Anderson | 82 | PD,MEI
 Vitor Roque | 83 | CA
 Flaco López | 82 | CA
 Andreas Pereira | 83 | MC,MEI
+# Revisão 2026: ídolos e elenco atual (importância no clube)
+Luan Garcia | 80
+Gabriel Menino | 80
+Miguel Borja | 78

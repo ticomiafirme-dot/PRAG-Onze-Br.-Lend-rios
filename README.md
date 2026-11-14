@@ -77,7 +77,7 @@ O `dist/` é estático. O repositório já traz o `netlify.toml`: no Netlify, ba
 ## Base de dados
 
 - **24 clubes** (`src/data/clubs.ts`): nome, cores, emblema original, estádio, fundação, história, títulos (Brasileirão, Copa do Brasil, Libertadores até 2025) e décadas disponíveis.
-- **2.894 registros jogador-clube** (`src/data/players/<clube>.json`, 2.048 jogadores diferentes), cada um com: id, nome, nome completo, nacionalidade, posição principal e secundárias, passagem (anos), **overall por década**, jogos e gols pelo clube, jogos pela seleção, descrição, foto livre (com autor e licença) e **URL da fonte**.
+- **4.726 registros jogador-clube** (`src/data/players/<clube>.json`, 2.872 jogadores diferentes, 5.659 cartas jogador-clube-década, elencos atualizados até 2026), cada um com: id, nome, nome completo, nacionalidade, posição principal e secundárias, passagem (anos), **overall por década**, jogos e gols pelo clube, jogos pela seleção, descrição, foto livre (com autor e licença) e **URL da fonte**.
 - Tabela completa em [`docs/jogadores.csv`](docs/jogadores.csv).
 - **Nenhuma passagem é inventada**: a década de cada jogador vem dos anos registrados na infobox da Wikipédia. Veja [`docs/FONTES.md`](docs/FONTES.md).
 - **Notas editoriais** (não oficiais): 855 definidas pela curadoria (`data-src/curation/`) e as demais por fórmula documentada. Veja [`docs/METODOLOGIA.md`](docs/METODOLOGIA.md).

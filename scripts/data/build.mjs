@@ -25,6 +25,24 @@ const CURATION = path.join(ROOT, 'data-src/curation');
 const OUT = path.join(ROOT, 'src/data/players');
 
 const persons = JSON.parse(fs.readFileSync(path.join(CACHE, 'persons.json'), 'utf8'));
+
+// ---------- correções (data-src/curation/_correcoes.json) ----------
+const decadeOf = (y) => `${Math.floor(y / 10) * 10}s`;
+const CORRECTIONS = path.join(CURATION, '_correcoes.json');
+if (fs.existsSync(CORRECTIONS)) {
+  const { adicionar = [] } = JSON.parse(fs.readFileSync(CORRECTIONS, 'utf8'));
+  for (const a of adicionar) {
+    const src = (persons[a.copiarDe] ?? []).find((r) => r.title === a.titulo);
+    if (!src) throw new Error(`Correção: "${a.titulo}" não encontrado em ${a.copiarDe}`);
+    const perDecade = {};
+    for (const [s0, e0] of a.periodos) for (let y = s0; y <= e0; y++) (perDecade[decadeOf(y)] ??= { years: 0, apps: null }).years++;
+    const row = { ...src, periods: a.periodos, apps: null, goals: null, loanOnly: false, decades: Object.keys(perDecade).sort(), perDecade, otherClubs: [] };
+    persons[a.clube] = [...(persons[a.clube] ?? []).filter((r) => r.title !== a.titulo), row];
+  }
+}
+
+/** Ainda está no clube (passagem chega ao ano da coleta)? */
+const isCurrent = (row) => row.periods.some(([, e]) => e >= CURRENT_YEAR - 1);
 const photos = fs.existsSync(path.join(CACHE, 'photos.json')) ? JSON.parse(fs.readFileSync(path.join(CACHE, 'photos.json'), 'utf8')) : {};
 
 // ---------- décadas por clube (lidas de src/data/clubs.ts) ----------
@@ -33,10 +51,24 @@ const CLUB_INFO = {};
 for (const m of clubsTs.matchAll(/id: '([a-z-]+)',\s*\n\s*name: '([^']+)'[\s\S]*?decades: \[([^\]]*)\]/g)) {
   CLUB_INFO[m[1]] = { name: m[2], decades: [...m[3].matchAll(/'(\d{4}s)'/g)].map((x) => x[1]) };
 }
+// títulos de cada clube (anos), para a nota: Brasileirão, Copa do Brasil e Libertadores
+const CLUB_TITLES = {};
+for (const block of clubsTs.split(/\n\s*\{\s*\n(?=\s*(?:guest: true,\s*\n\s*)?id: ')/)) {
+  const id = block.match(/id: '([a-z-]+)'/)?.[1];
+  if (!id) continue;
+  const years = (k) => [...(block.match(new RegExp(`${k}: \\[([^\\]]*)\\]`))?.[1] ?? '').matchAll(/\d{4}/g)].map((x) => Number(x[0]));
+  CLUB_TITLES[id] = { brasileirao: years('brasileirao'), copaDoBrasil: years('copaDoBrasil'), libertadores: years('libertadores') };
+}
 
 const POS_ORDER = ['GOL', 'LD', 'ZAG', 'LE', 'VOL', 'MC', 'MEI', 'PD', 'PE', 'SA', 'CA'];
 const QUOTA = { GOL: 3, LD: 2, ZAG: 4, LE: 2, VOL: 3, MC: 2, MEI: 3, PD: 2, PE: 2, SA: 1, CA: 3 };
-const MAX_AUTO_PER_DECADE = 26;
+// Limite de jogadores por década. Os anos 2020 têm mais vagas para caber o elenco atual.
+const MAX_AUTO_PER_DECADE = 40;
+const MAX_AUTO_CURRENT_DECADE = 50;
+const CURRENT_DECADE = '2020s';
+/** Ano da coleta: passagem que vai até ele (ou depois) é de quem ainda está no elenco. */
+const CURRENT_YEAR = 2026;
+const QUOTA_SCALE = 1.6;
 const MIN_PER_DECADE = 18;
 
 const POS_NAME = {
@@ -97,21 +129,43 @@ function primeFactor(row) {
   return f;
 }
 
-export function formulaRating(row) {
+const DEFENSIVE = new Set(['GOL', 'LD', 'ZAG', 'LE', 'VOL']);
+const TITLE_WEIGHT = { libertadores: 2.2, brasileirao: 2.0, copaDoBrasil: 1.2 };
+
+/**
+ * Nota pela importância no clube (versão 2): jogos, gols (ou regularidade, para
+ * goleiros e defensores), tempo de casa e títulos conquistados pelo clube nos
+ * anos em que o jogador estava lá, proporcionais a quanto ele jogou; a seleção
+ * pesa pouco. Limitada a 60–85 (acima disso, só pela curadoria).
+ */
+export function formulaRating(row, club) {
   const years = row.periods.reduce((a, [s, e]) => a + (e - s + 1), 0);
   const apps = row.apps ?? Math.min(250, years * 22);
-  const appsScore = Math.min(13, (12 * Math.log10(1 + apps)) / Math.log10(401));
-  const goalsScore = row.goals != null ? Math.min(7, row.goals / 18) : 0;
-  const capsScore = row.caps ? Math.min(14, 14 * Math.sqrt(row.caps / 100)) * (NAT_FACTOR[row.nationality] ?? 0.7) * primeFactor(row) : 0;
-  const r = 61 + appsScore + goalsScore + capsScore;
-  return Math.max(60, Math.min(86, Math.round(r)));
+  const appsScore = Math.min(13, (13 * Math.log10(1 + apps)) / Math.log10(301));
+  const defensive = DEFENSIVE.has(row.positions?.[0]);
+  const goalsScore = row.goals != null ? Math.min(6, row.goals / 15) : 0;
+  const steadiness = defensive ? Math.min(4, apps / 70) : 0;
+  const tenureScore = Math.min(3, 0.5 * years);
+  // títulos: participação = jogos por ano / 20 (titular regular ≈ 1)
+  const part = row.apps != null ? Math.min(1, row.apps / Math.max(1, years) / 20) : 0.6;
+  const titles = CLUB_TITLES[club] ?? {};
+  let titleSum = 0;
+  for (const [kind, w] of Object.entries(TITLE_WEIGHT)) {
+    for (const y of titles[kind] ?? []) if (row.periods.some(([s, e]) => y >= s && y <= e)) titleSum += w;
+  }
+  const titlesScore = Math.min(6, titleSum * part);
+  const capsScore = row.caps ? Math.min(5, 5 * Math.sqrt(row.caps / 100)) * (NAT_FACTOR[row.nationality] ?? 0.7) * primeFactor(row) : 0;
+  const r = 60 + appsScore + Math.max(goalsScore, steadiness) + tenureScore + titlesScore + capsScore;
+  return Math.max(60, Math.min(85, Math.round(r)));
 }
 
 function notability(row, d) {
   const pd = row.perDecade[d];
   const appsD = pd.apps ?? pd.years * 18;
   const goalsD = row.goals != null && row.apps ? (row.goals * appsD) / row.apps : 0;
-  return appsD + 0.5 * goalsD + 3 * Math.min(row.caps ?? 0, 60);
+  // quem ainda está no elenco tem prioridade na década atual
+  const current = d === CURRENT_DECADE && isCurrent(row) ? 60 : 0;
+  return appsD + 0.5 * goalsD + 3 * Math.min(row.caps ?? 0, 60) + current;
 }
 
 function withNaturalSecondaries(positions) {
@@ -172,19 +226,28 @@ for (const [club, info] of Object.entries(CLUB_INFO)) {
   }
   const excluded = (r) => [r.title, r.catTitle, r.name].some((k) => k && cur.exclude.has(normalize(k)));
 
+  // quem já está no jogo continua (partidas e históricos salvos guardam as cartas)
+  const previous = new Set();
+  const prevFile = path.join(OUT, `${club}.json`);
+  if (fs.existsSync(prevFile)) {
+    for (const p of JSON.parse(fs.readFileSync(prevFile, 'utf8')).players) for (const d of Object.keys(p.eras)) previous.add(`${p.id}@${d}`);
+  }
+
   const selected = new Map(); // title -> Set(decades)
   for (const d of info.decades) {
     const inD = rows.filter((r) => r.decades.includes(d) && !excluded(r));
     const chosen = new Set();
-    // 1) curadoria
-    for (const r of inD) if (curated.has(r.title)) chosen.add(r);
+    // 1) curadoria e quem já estava no jogo
+    for (const r of inD) if (curated.has(r.title) || previous.has(`${slugify(r.title)}@${d}`)) chosen.add(r);
     // 2) cotas por posição (pela posição principal)
     const ranked = inD
       .filter((r) => !chosen.has(r))
       .filter((r) => {
         const pd = r.perDecade[d];
         if (r.loanOnly && (pd.apps ?? 0) < 15) return false;
-        return pd.apps == null ? pd.years >= 1 : pd.apps >= 10;
+        // elenco atual: entra com menos jogos (contratações recentes)
+        const minApps = d === CURRENT_DECADE && isCurrent(r) ? 3 : 10;
+        return pd.apps == null ? pd.years >= 1 : pd.apps >= minApps;
       })
       .filter((r) => (curated.get(r.title)?.positions ?? r.positions).length > 0)
       .sort((a, b) => notability(b, d) - notability(a, d));
@@ -193,10 +256,11 @@ for (const [club, info] of Object.entries(CLUB_INFO)) {
       const p = (curated.get(r.title)?.positions ?? r.positions)[0];
       count[p] = (count[p] ?? 0) + 1;
     }
+    const max = d === CURRENT_DECADE ? MAX_AUTO_CURRENT_DECADE : MAX_AUTO_PER_DECADE;
     for (const r of ranked) {
-      if (chosen.size >= MAX_AUTO_PER_DECADE) break;
+      if (chosen.size >= max) break;
       const p = (curated.get(r.title)?.positions ?? r.positions)[0];
-      if ((count[p] ?? 0) >= QUOTA[p]) continue;
+      if ((count[p] ?? 0) >= Math.ceil(QUOTA[p] * QUOTA_SCALE * (d === CURRENT_DECADE ? 1.25 : 1))) continue;
       count[p] = (count[p] ?? 0) + 1;
       chosen.add(r);
     }
@@ -224,7 +288,7 @@ for (const [club, info] of Object.entries(CLUB_INFO)) {
     const e = curated.get(title);
     const positions = withNaturalSecondaries(e?.positions ?? r.positions);
     if (!positions.length) continue;
-    const base = e?.base ?? formulaRating(r);
+    const base = e?.base ?? formulaRating(r, club);
     const eras = {};
     for (const d of info.decades) if (decs.has(d)) eras[d] = e?.byDecade[d] ?? base;
     const nationality = NAT_ALIAS[r.nationality] ?? r.nationality ?? 'BRA';

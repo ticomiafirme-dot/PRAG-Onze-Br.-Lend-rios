@@ -69,3 +69,5 @@ Andrey Santos | 79 | VOL
 Gabriel Pec | 79 | PD
 Rayan | 79 | PD,CA
 Paulo Henrique Sampaio Filho | 80 | PE,PD
+# Revisão 2026: ídolos e elenco atual (importância no clube)
+Sorato | 85 | | Autor do gol do título brasileiro de 1989.

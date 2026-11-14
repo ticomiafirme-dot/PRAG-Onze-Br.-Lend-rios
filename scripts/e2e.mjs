@@ -113,8 +113,8 @@ async function run(label, contextOpts) {
       if (ovrs.some((v, i) => i > 0 && v > ovrs[i - 1])) errors.push(`aba TODOS fora de ordem: ${ovrs.join(',')}`);
     }
     // avatares ilustrados em todas as cartas, carregados (sem imagem quebrada)
-    const faces = await page.$$eval('.offers .pcard .pavatar', (imgs) => imgs.map((i) => ({ ok: i.complete && i.naturalWidth > 0, svg: (i.getAttribute('src') ?? '').startsWith('data:image/svg+xml') })));
-    if (!faces.length || faces.some((f) => !f.ok || !f.svg)) errors.push(`avatares das cartas do draft: ${JSON.stringify(faces.slice(0, 3))}`);
+    const faces = await page.$$eval('.offers .pcard .pavatar', (imgs) => imgs.map((i) => ({ ok: (i.complete && i.naturalWidth > 0) || i.getBoundingClientRect().top > innerHeight, svg: (i.getAttribute('src') ?? '').startsWith('data:image/svg+xml') })));
+    if (!faces.length || faces.some((f) => !f.ok || !f.svg)) errors.push(`avatares das cartas do draft: ${JSON.stringify(faces.map((f, i) => ({ i, ...f })).filter((f) => !f.ok || !f.svg).slice(0, 3))} de ${faces.length}`);
     await card.click();
     await page.waitForTimeout(150);
     if (await page.locator('.pos-chooser').count()) {

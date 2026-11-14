@@ -37,7 +37,7 @@ O jogador pertence à categoria da função principal e às das funções secund
 
 As notas são **avaliações editoriais do jogo, não notas oficiais**.
 
-### 3.1 Curadoria editorial (855 registros)
+### 3.1 Curadoria editorial (871 registros)
 
 Ídolos e jogadores marcantes têm nota definida manualmente em `data-src/curation/<clube>.txt`, considerando:
 
@@ -55,18 +55,29 @@ Faixas de referência: **90–99 Lenda** (gênios do futebol mundial no auge pel
 
 ### 3.2 Fórmula editorial (demais registros)
 
+A nota mede **o que o jogador fez pelo clube**: jogos, gols, tempo de casa e títulos conquistados lá. A seleção pesa pouco.
+
 ```
-nota = 61
-     + jogos pelo clube:   min(13, 12 · log10(1 + jogos) / log10(401))
-     + gols pelo clube:    min(7, gols / 18)
-     + seleção principal:  min(14, 14 · √(jogos_seleção / 100)) · fator_país · fator_auge
-limitada a 60–86
+nota = 60
+     + jogos pelo clube:     min(13, 13 · log10(1 + jogos) / log10(301))
+     + gols ou regularidade: max(min(6, gols / 15),
+                                 min(4, jogos / 70) para goleiros, zagueiros, laterais e volantes)
+     + tempo de casa:        min(3, 0,5 · anos no clube)
+     + títulos pelo clube:   min(6, Σ peso_título · participação)
+     + seleção principal:    min(5, 5 · √(jogos_seleção / 100)) · fator_país · fator_auge
+limitada a 60–85
 ```
 
+- `peso_título`: Libertadores 2,2; Brasileirão 2,0; Copa do Brasil 1,2 (títulos do clube nos anos em que o jogador estava lá, conforme `src/data/clubs.ts`).
+- `participação`: min(1, jogos por ano / 20); sem o número de jogos na fonte, 0,6. Quem foi reserva num ano de título ganha só uma parte do peso.
 - `fator_país`: 1,0 Brasil; 0,9 Argentina; 0,85 Uruguai; 0,7 demais.
 - `fator_auge`: reduz o peso da seleção quando a passagem foi no início (até 21 anos: ×0,4; até 23: ×0,65) ou no fim da carreira (a partir de 32 anos: ×0,85; 34: ×0,65; 36: ×0,45).
 - Números de seleção acima de 180 são descartados (indicam outras modalidades, como futebol de areia).
-- Se a fonte não tem o número de jogos, estima-se 22 por ano de passagem (até 250).
+- O teto de 85 vale só para a fórmula: notas de ídolo acima disso (e ajustes de quem é peça importante do elenco atual) vêm da curadoria.
+
+### 3.3 Elencos atuais
+
+O elenco de cada clube é atualizado com as passagens registradas até 2026. Quem está no clube na temporada atual tem prioridade na seleção da década de 2020 (mínimo de 3 jogos, contra 10 nas outras décadas), e a década atual aceita até 50 jogadores por clube (40 nas demais). Jogadores que já estavam no jogo nunca são removidos numa atualização, para não quebrar partidas e históricos salvos.
 
 ## 4. Química
 

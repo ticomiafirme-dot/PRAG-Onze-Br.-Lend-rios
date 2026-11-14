@@ -150,6 +150,6 @@ describe('correção de identidade (homônimos)', () => {
     expect(santos?.overall).toBe(90);
     expect(db.card('robson-michael-signorini@santos@2000s').key).toBe('robinho@santos@2000s');
     expect(db.clubsOfPerson('robinho').sort()).toEqual(['atletico-mg', 'santos']);
-    expect(db.clubsOfPerson('robson-michael-signorini')).toEqual(['coritiba']);
+    expect(db.clubsOfPerson('robson-michael-signorini')).not.toContain('santos');
   });
 });

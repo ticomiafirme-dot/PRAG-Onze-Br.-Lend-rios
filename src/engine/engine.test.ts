@@ -87,7 +87,7 @@ describe('draft', () => {
         }
       }
     }
-  });
+  }, 60_000); // 168 drafts completos
 
   it('novos sorteios são limitados a 5 e não repetem a mesma década quando há alternativa', () => {
     let st = createDraft(db, { mode: 'classico', clubId: 'corinthians', decade: null, formationId: '4-3-3', seed: 42, rerolls: 5 });

@@ -1,0 +1,12 @@
+{
+  "_sobre": "Correções aplicadas pelo montador (scripts/data/build.mjs) sobre os dados coletados. 'adicionar' cria a passagem de um jogador por um clube quando o artigo dele não listava esse clube na coleta, copiando o restante (nome, nacionalidade, posições, foto) do registro coletado noutro clube.",
+  "adicionar": [
+    {
+      "clube": "santos",
+      "copiarDe": "atletico-mg",
+      "titulo": "Robinho",
+      "periodos": [[2002, 2005], [2010, 2010], [2014, 2015]],
+      "motivo": "O Robinho do Santos (Robson de Souza) não veio na coleta do Santos; a linha 'Robinho' da curadoria acabava ligada a Róbson Michael Signorini."
+    }
+  ]
+}

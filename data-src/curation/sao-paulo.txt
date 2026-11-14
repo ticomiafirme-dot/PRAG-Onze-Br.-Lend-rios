@@ -83,3 +83,6 @@ Luiz Gustavo | 80 | VOL
 Gabriel Sara | 79 | MEI
 # Correção: a infobox da fonte registra 97 jogos pela seleção para Sidney Moraes, número incompatível com sua carreira.
 Sidney Moraes | 77 | VOL
+# Revisão 2026: ídolos e elenco atual (importância no clube)
+Leônidas | 90 | | O "Diamante Negro", inventor da bicicleta e ídolo do São Paulo nos anos 1940.
+Diego Tardelli | 79

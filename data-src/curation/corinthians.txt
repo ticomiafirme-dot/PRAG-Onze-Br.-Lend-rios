@@ -83,12 +83,19 @@ Jô (futebolista) | 86 2000s=78 | CA | Artilheiro e craque do Brasileirão de 20
 # 2020s
 Willian Borges da Silva | 82 | PD,PE
 Róger Guedes | 82 | CA,PE
-Yuri Alberto | 81 | CA
+Yuri Alberto | 84 | CA | Artilheiro e referência do elenco atual.
 Memphis Depay | 86 | SA,CA
 Rodrigo Garro | 84 | MEI
-Hugo Souza | 81 | GOL
+Hugo Souza | 83 | GOL | Goleiro decisivo na arrancada de 2024, virou xodó da Fiel.
 Félix Torres | 80 | ZAG
 José Andrés Martínez | 79 | VOL
 André Ramalho | 79 | ZAG
 Matheus Bidu | 77 | LE
 Giuliano | 79 | MEI,MC
+# Revisão 2026: ídolos e elenco atual (importância no clube)
+Breno Bidon | 79 | | Cria do Terrão, titular no meio-campo do elenco atual.
+Matheuzinho | 79
+Raniele | 78
+André Carrillo | 79
+Maycon | 80
+Tupãzinho | 84 | | Autor do gol do primeiro título brasileiro do Corinthians, em 1990.

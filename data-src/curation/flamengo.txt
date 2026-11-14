@@ -101,3 +101,7 @@ Jorge Luiz Frello Filho | 86 | VOL,MC
 Saúl Ñíguez | 83 | MC
 Samuel Lino | 82 | PE
 Michael (futebolista) | 81 | PE,PD
+# Revisão 2026: ídolos e elenco atual (importância no clube)
+Zizinho | 90 | | O "Mestre Ziza", ídolo de Pelé e um dos maiores jogadores da história do Flamengo.
+Everton Cebolinha | 81
+Rodinei | 78

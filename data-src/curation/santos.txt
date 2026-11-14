@@ -55,3 +55,4 @@ Marcos Leonardo | 82 | CA
 Kaio Jorge | 79 | CA
 João Paulo Silva Martins | 80 | GOL
 Tomás Rincón | 79 | VOL
+-Róbson Michael Signorini
