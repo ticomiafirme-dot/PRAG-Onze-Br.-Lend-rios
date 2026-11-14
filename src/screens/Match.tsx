@@ -107,6 +107,18 @@ function MatchInner() {
   const lastAttack = [...visible].reverse().find((e) => ['goal', 'penalty-goal', 'save', 'miss', 'post', 'offside', 'penalty-miss'].includes(e.type));
   const ballX = !lastAttack || clock - posOf(lastAttack) > 3 ? 50 : lastAttack.side === 'home' ? 88 : 12;
 
+  // jogo de volta: gols da ida de cada time, para o agregado ao vivo
+  const firstLeg = useMemo(() => {
+    if (day.leg !== 2) return null;
+    const cup = day.comp === 'copa' ? c.copa : c.estadual;
+    const tie = cup?.stages[day.stage!]?.ties.find((t) => t.a === USER_ID || t.b === USER_ID);
+    const m = tie?.legs[0] ? c.results.find((r) => r.key === tie.legs[0]) : undefined;
+    if (!m) return null;
+    const goalsOf = (id: string) => (m.home === id ? m.score[0] : m.away === id ? m.score[1] : 0);
+    return { home: goalsOf(result.home), away: goalsOf(result.away), legHome: m.home, legAway: m.away, legScore: m.score };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const agg: [number, number] | null = firstLeg ? [firstLeg.home + score[0], firstLeg.away + score[1]] : null;
+
   // mata-mata: agregado e pênaltis
   const knockout = useMemo(() => {
     if (day.leg !== 2) return null;
@@ -148,6 +160,26 @@ function MatchInner() {
           <div className="clock">
             <span className={`live-dot ${done ? 'off' : ''}`} /> {clockLabel} <span className="dim">· {done ? 'encerrado' : half}</span>
           </div>
+          {agg && firstLeg && (
+            <div className="agg" aria-label={`Placar agregado: ${home.short} ${agg[0]} a ${agg[1]} ${away.short}`}>
+              <span className="agg-label">Agregado</span>
+              <span className={`agg-score ${agg[0] === agg[1] ? 'is-level' : ''}`}>
+                <b className={agg[0] > agg[1] ? 'is-ahead' : ''}>{agg[0]}</b>
+                <span className="score-x">×</span>
+                <b className={agg[1] > agg[0] ? 'is-ahead' : ''}>{agg[1]}</b>
+              </span>
+              <span className="agg-first dim">
+                Ida: {c.teams[firstLeg.legHome].short} {firstLeg.legScore[0]} × {firstLeg.legScore[1]} {c.teams[firstLeg.legAway].short}
+              </span>
+              <span className="agg-status">
+                {agg[0] === agg[1]
+                  ? done
+                    ? 'Empate no agregado: decisão nos pênaltis'
+                    : 'Empate no agregado'
+                  : `${(agg[0] > agg[1] ? home : away).short} ${done ? 'se classifica' : 'está se classificando'}`}
+              </span>
+            </div>
+          )}
         </div>
         <TeamBlock t={away} />
       </div>

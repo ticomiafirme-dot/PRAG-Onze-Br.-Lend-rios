@@ -153,6 +153,39 @@ await page.waitForSelector('.fulltime');
 if (await page.locator('.pk-skip').count()) await page.locator('.pk-skip').click();
 await page.getByRole('button', { name: /Continuar →/i }).click();
 await page.waitForURL(/#campeonato/);
+await dismiss();
+// jogo de volta de mata-mata: o placar agregado aparece ao vivo junto do placar da partida
+{
+  let found = false;
+  for (let n = 0; n < 80; n++) {
+    if (/volta/i.test((await page.locator('.next-match .eyebrow').textContent().catch(() => '')) ?? '')) {
+      found = true;
+      break;
+    }
+    const next = page.getByRole('button', { name: /^(Simular resultado|Avançar)$/ });
+    if (!(await next.count())) break;
+    await next.first().click();
+    await page.waitForTimeout(100);
+    await dismiss();
+  }
+  if (!found) errors.push('Tríplice: nenhum jogo de volta encontrado para conferir o agregado');
+  else {
+    await page.getByRole('button', { name: /Jogar partida/i }).click();
+    await page.waitForURL(/#partida/);
+    const ok = await page.waitForSelector('.scoreboard .agg', { timeout: 5000 }).then(() => true, () => false);
+    const text = ok ? ((await page.locator('.scoreboard .agg').textContent()) ?? '').replace(/\s+/g, ' ') : '';
+    if (!ok || !/Agregado\s*\d+\s*×\s*\d+/.test(text) || !/Ida:/.test(text)) errors.push(`Tríplice: placar agregado no jogo de volta: "${text}"`);
+    await shot('triplice-jogo-de-volta');
+    await page.getByRole('button', { name: /Pular para o final/i }).click();
+    await page.waitForSelector('.fulltime');
+    const status = (await page.locator('.agg-status').textContent()) ?? '';
+    if (!/se classifica|pênaltis/.test(status)) errors.push(`Tríplice: situação do agregado no fim: "${status}"`);
+    if (await page.locator('.pk-skip').count()) await page.locator('.pk-skip').click();
+    await page.getByRole('button', { name: /Continuar →/i }).click();
+    await page.waitForURL(/#(campeonato|resultado)/);
+    await dismiss();
+  }
+}
 await page.getByRole('tab', { name: /Mineiro/ }).click();
 await shot('triplice-estadual');
 await simulateAll();
@@ -160,6 +193,14 @@ await page.waitForSelector('.achievements');
 const ach = await page.locator('.achievements li').allTextContents();
 if (!ach.some((a) => /Tríplice Coroa/.test(a))) errors.push('Tríplice: conquista Tríplice Coroa não listada');
 await shot('triplice-resultado');
+
+// encerrar a temporada: volta ao início sem partida em andamento; a temporada fica no histórico
+await page.getByRole('button', { name: /Encerrar temporada/i }).click();
+await page.waitForSelector('.hero');
+if (!(await page.getByRole('button', { name: /Jogar agora/i }).count())) errors.push('Encerrar temporada: o início deveria oferecer "Jogar agora"');
+await page.goto(BASE + '#historico');
+await page.waitForSelector('.season-card');
+if (!(await page.locator('.season-card', { hasText: 'Cruzeiro' }).count())) errors.push('Encerrar temporada: a temporada sumiu do histórico');
 
 await page.goto(BASE + '#ranking');
 const n = await page.locator('table.data tbody tr').count();

@@ -250,6 +250,16 @@ function FinalInner() {
         <button className="btn btn-blue" onClick={again}>
           Jogar de novo
         </button>
+        <button
+          className="btn btn-ghost"
+          onClick={() => {
+            // a temporada já está salva no histórico e no ranking: só libera o jogo para começar outra
+            abandon();
+            navigate('/');
+          }}
+        >
+          Encerrar temporada
+        </button>
       </div>
       {showShare && record && (
         <ShareModal
