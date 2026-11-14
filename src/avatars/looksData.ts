@@ -642,6 +642,7 @@ export const LOOKS: Record<string, LookEntry> = {
   'roger-machado': '5Sk0',
   'rogerio-ceni': { base: '2Sds', '1990s': '2Sd0' },
   romario: { base: '4Zk0', '1980s': '4Sk0' },
+  'romarinho': '5Zk0',
   'romulo-borges-monteiro': '3Skc',
   'romulo-otero': '3Sk0',
   ronaldao: '6Zk0',
