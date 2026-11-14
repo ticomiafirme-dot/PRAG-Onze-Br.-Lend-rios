@@ -195,13 +195,15 @@ function DraftInner() {
               <div className="panel draw-panel">
                 <div className="row" style={{ justifyContent: 'space-between' }}>
                   <span className="eyebrow" style={{ margin: 0 }}>
-                    {fixedDecade ? 'Era fixa · jogadores sorteados' : run.mode === 'mistura' ? 'Clube e década sorteados' : 'Década sorteada'}
+                    {fixedDecade ? 'Era fixa · todos os jogadores' : run.mode === 'mistura' ? 'Clube e década sorteados' : 'Década sorteada'}
                   </span>
-                  <span className="rerolls" aria-label={`${draft.rerollsLeft} novos sorteios restantes`}>
-                    {Array.from({ length: draft.config.rerolls }).map((_, i) => (
-                      <i key={i} className={i < draft.rerollsLeft ? 'on' : ''} />
-                    ))}
-                  </span>
+                  {!fixedDecade && (
+                    <span className="rerolls" aria-label={`${draft.rerollsLeft} novos sorteios restantes`}>
+                      {Array.from({ length: draft.config.rerolls }).map((_, i) => (
+                        <i key={i} className={i < draft.rerollsLeft ? 'on' : ''} />
+                      ))}
+                    </span>
+                  )}
                 </div>
                 <Roulette spinning={spinning} pool={decadesPool} final={draw ? (run.mode === 'mistura' ? `${club?.short} ${draw.decade}` : draw.decade) : ''} />
                 {draw && club && (
@@ -218,16 +220,18 @@ function DraftInner() {
                     </div>
                   </div>
                 )}
-                <button className="btn btn-ghost btn-block" onClick={reroll} disabled={draft.rerollsLeft === 0 || spinning}>
-                  {fixedDecade ? 'Sortear outros jogadores' : 'Sortear novamente'} ({draft.rerollsLeft})
-                </button>
+                {!fixedDecade && (
+                  <button className="btn btn-ghost btn-block" onClick={reroll} disabled={draft.rerollsLeft === 0 || spinning}>
+                    Sortear novamente ({draft.rerollsLeft})
+                  </button>
+                )}
               </div>
 
               <div className="panel offers-panel">
                 <div className="row wrap" style={{ justifyContent: 'space-between', gap: 8 }}>
                   <div>
                     <div className="eyebrow" style={{ margin: 0 }}>
-                      {activeCat ? 'Categoria disponível' : 'Jogadores sorteados'}
+                      {activeCat ? 'Categoria disponível' : fixedDecade ? 'Jogadores da época' : 'Jogadores sorteados'}
                     </div>
                     <h2 style={{ fontSize: 26 }}>{activeCat ? `${POSITION_PLURAL[activeCat]} (${activeCat})` : 'Todos os jogadores'}</h2>
                     <div className="dim" style={{ fontSize: 13 }}>

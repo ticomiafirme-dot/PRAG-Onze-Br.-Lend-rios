@@ -106,9 +106,12 @@ describe('draft', () => {
     expect(clubs.size).toBeGreaterThan(3);
   });
 
-  it('modo Era Única usa só a década escolhida e oferece até 3 por categoria', () => {
+  it('modo Era Única usa só a década escolhida e mostra todos os jogadores dela', () => {
     const st0 = createDraft(db, { mode: 'era', clubId: 'flamengo', decade: '1980s', formationId: '4-4-2', seed: 9, rerolls: 5 });
-    for (const offers of Object.values(st0.draw!.offers)) expect(offers.length).toBeLessThanOrEqual(3);
+    const offered = new Set(Object.values(st0.draw!.offers).flat());
+    for (const c of db.cards('flamengo', '1980s')) expect(offered.has(c.key), c.key).toBe(true);
+    const nau = createDraft(db, { mode: 'era', clubId: 'nautico', decade: '1960s', formationId: '3-4-3', seed: 1, rerolls: 5 });
+    expect(Object.values(nau.draw!.offers).flat().some((k) => k.startsWith('bita@'))).toBe(true);
     const st = autoDraft('flamengo', '4-4-2', 9, 'era', '1980s');
     expect(isDraftComplete(st)).toBe(true);
     for (const k of Object.values(st.picks)) expect(db.card(k).decade).toBe('1980s');

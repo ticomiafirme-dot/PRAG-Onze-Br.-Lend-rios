@@ -30,7 +30,7 @@ Inspirado nas mecânicas de draft por sorteio do Perfect Season FC, com identida
 | Modo | Como funciona |
 | --- | --- |
 | Clássico | Você escolhe o clube; as décadas são sorteadas a cada rodada |
-| Era Única | Clube e década fixos; três jogadores sorteados por categoria a cada rodada |
+| Era Única | Clube e década fixos; todos os jogadores daquela década aparecem em todas as rodadas |
 | Mistura Brasileira | Clube e década sorteados a cada rodada |
 | Desafio Diário | Mesmo clube, década, formação e sorteios para todos; uma tentativa por dia (fuso de Brasília) |
 | Desafio Semanal | Um clube por semana, nível Difícil, sorteios iguais para todos |

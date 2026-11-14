@@ -119,13 +119,13 @@ await page.waitForURL(/#formacao/);
 await page.locator('.formation-card:not([disabled])').first().click();
 await page.getByRole('button', { name: /Iniciar draft/i }).click();
 await page.waitForSelector('.roulette.is-done');
-// cada categoria oferece até 3 jogadores (a aba TODOS junta todas)
+// era fixa: aparecem todos os jogadores da década (sem novo sorteio)
 for (const cat of ['GOL', 'DEF', 'MEI', 'ATA']) {
   const tab = page.locator('.offers-panel [role=tab]', { hasText: new RegExp(`^${cat}`) });
   if (!(await tab.count())) continue;
   await tab.click();
   const offers = await page.locator('.offers button.pcard').count();
-  if (offers > 3) errors.push(`Era Única: esperava até 3 ofertas em ${cat}, veio ${offers}`);
+  if (offers < (cat === 'GOL' ? 1 : 4)) errors.push(`Era Única: esperava todos os jogadores da década em ${cat}, veio ${offers}`);
 }
 await page.locator('.offers-panel [role=tab]', { hasText: /^TODOS/ }).click();
 await shot('era-draft');

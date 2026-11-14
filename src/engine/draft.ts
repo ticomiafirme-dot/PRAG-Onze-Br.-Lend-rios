@@ -13,8 +13,6 @@ import { Rng, type RngState } from './rng';
 export type GameMode = 'classico' | 'era' | 'mistura' | 'diario' | 'semanal' | 'triplice';
 
 export const DEFAULT_REROLLS = 5;
-/** Quantos jogadores são oferecidos por categoria quando a década é fixa. */
-export const ERA_OFFER_SIZE = 3;
 
 export interface DraftConfig {
   mode: GameMode;
@@ -139,7 +137,7 @@ function candidatePairs(db: Database, state: DraftState): Candidate[] {
  * Ofertas de um (clube, década) para cada categoria com vaga livre: jogadores
  * inéditos da categoria cuja escolha ainda permite completar as demais vagas.
  */
-function buildOffers(db: Database, state: DraftState, cand: Candidate, rng: Rng): Partial<Record<Position, string[]>> {
+function buildOffers(db: Database, state: DraftState, cand: Candidate, _rng: Rng): Partial<Record<Position, string[]>> {
   const open = openSlots(state);
   const taken = pickedPersons(db, state);
   const universe = remainingUniverse(db, state, taken);
@@ -156,10 +154,8 @@ function buildOffers(db: Database, state: DraftState, cand: Candidate, rng: Rng)
   const offers: Partial<Record<Position, string[]>> = {};
   for (const pos of openPositions(state)) {
     let cards = eligibleFor(db, state, cand.clubId, cand.decade, pos, taken).filter((c) => feasible(c, pos));
-    if (state.config.decade) {
-      // Década fixa: a aleatoriedade está em QUAIS jogadores aparecem.
-      cards = rng.shuffle(cards).slice(0, ERA_OFFER_SIZE).sort((a, b) => b.overall - a.overall);
-    }
+    // Década fixa: aparecem todos os jogadores cadastrados do clube naquela década.
+    if (state.config.decade) cards = [...cards].sort((a, b) => b.overall - a.overall);
     if (cards.length) offers[pos] = cards.map((c) => c.key);
   }
   return offers;
