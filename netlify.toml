@@ -10,7 +10,8 @@
   NODE_VERSION = "22"
   # Instala também as dependências de desenvolvimento (TypeScript e Vite são usados no build).
   NPM_FLAGS = "--include=dev"
-  # Login e nuvem (Supabase). Estas duas chaves são públicas por natureza (vão
+  # Login e nuvem (Supabase): também estão em .env.production (usado por qualquer
+  # hospedagem). Estas duas chaves são públicas por natureza (vão
   # para o navegador de qualquer forma); quem protege os dados são as regras
   # de segurança do banco. NUNCA coloque aqui a chave service_role.
   # Sem elas, o jogo funciona só como visitante e o botão "Entrar" não aparece.
@@ -25,15 +26,5 @@
   to = "/"
   status = 302
 
-# Arquivos gerados com hash no nome (JS, CSS, fontes, imagens): podem ficar em
-# cache no navegador por muito tempo, porque cada versão nova tem outro nome.
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
+# Cabeçalhos de cache e segurança: em public/_headers (o mesmo arquivo serve
+# para o Netlify e para o Cloudflare Pages).

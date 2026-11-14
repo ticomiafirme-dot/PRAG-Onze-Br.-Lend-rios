@@ -1,0 +1,11 @@
+# Cabeçalhos HTTP (lido pelo Cloudflare Pages e pelo Netlify).
+# Arquivos gerados com hash no nome (JS, CSS, imagens): cache longo no
+# navegador, porque cada versão nova tem outro nome.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Demais arquivos (index.html, privacidade.html): o navegador confere se há
+# versão nova a cada acesso.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

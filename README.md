@@ -73,7 +73,7 @@ npm run e2e:cloud      # login Google, salvamento automático e dois aparelhos (
 
 ### Publicar
 
-O `dist/` é estático. O repositório já traz o `netlify.toml`: no Netlify, basta importar o repositório do GitHub e publicar. O passo a passo, incluindo o login com Google e o domínio próprio, está em [docs/NETLIFY.md](docs/NETLIFY.md).
+O `dist/` é estático. A hospedagem recomendada é o **Cloudflare Pages** (grátis, sem limite de publicações por crédito): passo a passo em [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md). O `.env.production` já traz o endereço e a chave pública do login, então o build sai pronto em qualquer hospedagem. O `netlify.toml` continua no repositório para quem usa o Netlify ([docs/NETLIFY.md](docs/NETLIFY.md)). Para testes locais sem a nuvem, use `npm run build:visitante`.
 
 ## Base de dados
 

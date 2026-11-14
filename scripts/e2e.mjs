@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Teste ponta a ponta do fluxo completo (desktop e celular) com Playwright.
-// Uso: npm run build && npx vite preview --port 4173 & node scripts/e2e.mjs [url] [pasta-de-capturas]
+// Uso: npm run build:visitante && npx vite preview --port 4173 & node scripts/e2e.mjs [url] [pasta-de-capturas]
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
