@@ -10,6 +10,7 @@ import { TeamCrest } from '../components/TeamBadge';
 import { Confetti, NeedRun } from '../components/ui';
 import type { TeamSheet } from '../engine/team';
 import { PlayerFaceByKey } from '../components/PlayerFace';
+import { PenaltyShootout } from '../components/PenaltyShootout';
 
 const MS_PER_MINUTE_1X = 600;
 const TICK_MS = 100;
@@ -57,6 +58,7 @@ function MatchInner() {
   const [playing, setPlaying] = useState(true);
   const [flash, setFlash] = useState<MatchEvent | null>(null);
   const [tab, setTab] = useState<'lances' | 'estatisticas' | 'escalacoes'>('lances');
+  const [pkDone, setPkDone] = useState(false);
   const done = clock >= total;
   const seenGoals = useRef(0);
 
@@ -184,7 +186,8 @@ function MatchInner() {
           {knockout && (
             <p className="muted">
               Agregado: {c.teams[knockout.a].short} {knockout.ga} × {knockout.gb} {c.teams[knockout.b].short}
-              {knockout.so && (
+              {knockout.so && !pkDone && ' · empate no agregado: decisão nos pênaltis!'}
+              {knockout.so && pkDone && (
                 <>
                   {' '}
                   · Pênaltis: {c.teams[fixture.home].short} {knockout.so.score[0]} × {knockout.so.score[1]} {c.teams[fixture.away].short}
@@ -193,17 +196,22 @@ function MatchInner() {
             </p>
           )}
           {knockout?.so && (
-            <div className="shootout">
-              {knockout.so.kicks.map((k, i) => (
-                <span key={i} className={`kick ${k.scored ? 'in' : 'out'}`} title={`${k.name} (${k.side === 'home' ? home.short : away.short})`}>
-                  {k.scored ? '●' : '○'}
-                </span>
-              ))}
-            </div>
+            <PenaltyShootout
+              kicks={knockout.so.kicks}
+              score={knockout.so.score}
+              home={c.teams[fixture.home]}
+              away={c.teams[fixture.away]}
+              seed={result.seed}
+              speed={speed}
+              userSide={fixture.home === USER_ID ? 'home' : 'away'}
+              onDone={() => setPkDone(true)}
+            />
           )}
-          <button className="btn btn-gold btn-lg" onClick={finish}>
-            Continuar →
-          </button>
+          {(!knockout?.so || pkDone) && (
+            <button className="btn btn-gold btn-lg" onClick={finish}>
+              Continuar →
+            </button>
+          )}
         </div>
       )}
 

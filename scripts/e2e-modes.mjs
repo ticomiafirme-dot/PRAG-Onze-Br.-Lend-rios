@@ -149,6 +149,8 @@ await shot('triplice-campeonato');
 await page.getByRole('button', { name: /Jogar partida/i }).click();
 await page.getByRole('button', { name: /Pular para o final/i }).click();
 await page.waitForSelector('.fulltime');
+// empate no agregado: a disputa de pênaltis é animada; pula para o fim
+if (await page.locator('.pk-skip').count()) await page.locator('.pk-skip').click();
 await page.getByRole('button', { name: /Continuar →/i }).click();
 await page.waitForURL(/#campeonato/);
 await page.getByRole('tab', { name: /Mineiro/ }).click();

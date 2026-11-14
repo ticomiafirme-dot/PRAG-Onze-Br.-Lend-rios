@@ -162,6 +162,8 @@ async function run(label, contextOpts) {
   await page.waitForSelector('.fulltime');
   await page.waitForTimeout(2200);
   await shot('13-partida-fim');
+  // empate no agregado: a disputa de pênaltis é animada; pula para o fim
+  if (await page.locator('.pk-skip').count()) await page.locator('.pk-skip').click();
   await page.getByRole('button', { name: /Continuar →/i }).click();
   await page.waitForURL(/#campeonato/);
   await dismiss();
