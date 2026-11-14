@@ -75,9 +75,9 @@ limitada a 60–85
 - Números de seleção acima de 180 são descartados (indicam outras modalidades, como futebol de areia).
 - O teto de 85 vale só para a fórmula: notas de ídolo acima disso (e ajustes de quem é peça importante do elenco atual) vêm da curadoria.
 
-### 3.3 Elencos atuais
+### 3.3 Quem entra no jogo
 
-O elenco de cada clube é atualizado com as passagens registradas até 2026. Quem está no clube na temporada atual tem prioridade na seleção da década de 2020 (mínimo de 3 jogos, contra 10 nas outras décadas), e a década atual aceita até 50 jogadores por clube (40 nas demais). Jogadores que já estavam no jogo nunca são removidos numa atualização, para não quebrar partidas e históricos salvos.
+Só os jogadores mais conhecidos e importantes de cada clube: até 26 por década (escolhidos por jogos, gols e seleção, com cotas por posição), mais os ídolos da curadoria. Nos anos 2020 entram também os **titulares do elenco atual** (até 34 na década): quem está no clube em 2025/2026 e já tem pelo menos 40 jogos por ele, ou foi destacado pela curadoria. Reservas e contratações que ainda não firmaram não entram. Jogadores que já estavam no jogo (lista em `data-src/curation/_base.json`) nunca são removidos, para não quebrar partidas e históricos salvos.
 
 ## 4. Química
 

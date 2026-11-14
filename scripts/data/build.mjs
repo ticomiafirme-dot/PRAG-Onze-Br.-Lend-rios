@@ -43,6 +43,8 @@ if (fs.existsSync(CORRECTIONS)) {
 
 /** Ainda está no clube (passagem chega ao ano da coleta)? */
 const isCurrent = (row) => row.periods.some(([, e]) => e >= CURRENT_YEAR - 1);
+const BASE_FILE = path.join(CURATION, '_base.json');
+const BASE_CARDS = fs.existsSync(BASE_FILE) ? JSON.parse(fs.readFileSync(BASE_FILE, 'utf8')) : {};
 const photos = fs.existsSync(path.join(CACHE, 'photos.json')) ? JSON.parse(fs.readFileSync(path.join(CACHE, 'photos.json'), 'utf8')) : {};
 
 // ---------- décadas por clube (lidas de src/data/clubs.ts) ----------
@@ -62,13 +64,15 @@ for (const block of clubsTs.split(/\n\s*\{\s*\n(?=\s*(?:guest: true,\s*\n\s*)?id
 
 const POS_ORDER = ['GOL', 'LD', 'ZAG', 'LE', 'VOL', 'MC', 'MEI', 'PD', 'PE', 'SA', 'CA'];
 const QUOTA = { GOL: 3, LD: 2, ZAG: 4, LE: 2, VOL: 3, MC: 2, MEI: 3, PD: 2, PE: 2, SA: 1, CA: 3 };
-// Limite de jogadores por década. Os anos 2020 têm mais vagas para caber o elenco atual.
-const MAX_AUTO_PER_DECADE = 40;
-const MAX_AUTO_CURRENT_DECADE = 50;
+// Só os jogadores mais conhecidos e importantes de cada década (nada de "reserva do
+// reserva"). Nos anos 2020 entram também os titulares do elenco atual.
+const MAX_AUTO_PER_DECADE = 26;
+const MAX_AUTO_CURRENT_DECADE = 34;
 const CURRENT_DECADE = '2020s';
 /** Ano da coleta: passagem que vai até ele (ou depois) é de quem ainda está no elenco. */
 const CURRENT_YEAR = 2026;
-const QUOTA_SCALE = 1.6;
+/** Jogos mínimos pelo clube para um jogador do elenco atual entrar sem curadoria (peça do time, não reserva). */
+const MIN_APPS_CURRENT = 40;
 const MIN_PER_DECADE = 18;
 
 const POS_NAME = {
@@ -226,12 +230,9 @@ for (const [club, info] of Object.entries(CLUB_INFO)) {
   }
   const excluded = (r) => [r.title, r.catTitle, r.name].some((k) => k && cur.exclude.has(normalize(k)));
 
-  // quem já está no jogo continua (partidas e históricos salvos guardam as cartas)
-  const previous = new Set();
-  const prevFile = path.join(OUT, `${club}.json`);
-  if (fs.existsSync(prevFile)) {
-    for (const p of JSON.parse(fs.readFileSync(prevFile, 'utf8')).players) for (const d of Object.keys(p.eras)) previous.add(`${p.id}@${d}`);
-  }
+  // quem já estava no jogo antes da revisão de elencos continua (partidas e históricos
+  // salvos guardam as cartas): lista congelada em data-src/curation/_base.json
+  const previous = new Set(BASE_CARDS[club] ?? []);
 
   const selected = new Map(); // title -> Set(decades)
   for (const d of info.decades) {
@@ -245,9 +246,9 @@ for (const [club, info] of Object.entries(CLUB_INFO)) {
       .filter((r) => {
         const pd = r.perDecade[d];
         if (r.loanOnly && (pd.apps ?? 0) < 15) return false;
-        // elenco atual: entra com menos jogos (contratações recentes)
-        const minApps = d === CURRENT_DECADE && isCurrent(r) ? 3 : 10;
-        return pd.apps == null ? pd.years >= 1 : pd.apps >= minApps;
+        // elenco atual: só quem já é peça do time (jogos pelo clube), não o reserva
+        if (d === CURRENT_DECADE && isCurrent(r)) return (r.apps ?? 0) >= MIN_APPS_CURRENT;
+        return pd.apps == null ? pd.years >= 1 : pd.apps >= 10;
       })
       .filter((r) => (curated.get(r.title)?.positions ?? r.positions).length > 0)
       .sort((a, b) => notability(b, d) - notability(a, d));
@@ -260,7 +261,7 @@ for (const [club, info] of Object.entries(CLUB_INFO)) {
     for (const r of ranked) {
       if (chosen.size >= max) break;
       const p = (curated.get(r.title)?.positions ?? r.positions)[0];
-      if ((count[p] ?? 0) >= Math.ceil(QUOTA[p] * QUOTA_SCALE * (d === CURRENT_DECADE ? 1.25 : 1))) continue;
+      if ((count[p] ?? 0) >= Math.ceil(QUOTA[p] * (d === CURRENT_DECADE ? 1.3 : 1))) continue;
       count[p] = (count[p] ?? 0) + 1;
       chosen.add(r);
     }
