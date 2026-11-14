@@ -136,6 +136,16 @@ export function setRemoteDetailsLoader(fn: DetailsLoader | null): void {
   remoteDetails = fn;
 }
 
+/** Detalhes de uma temporada guardados na nuvem (null sem login ou se não houver). */
+export async function loadRemoteDetails(owner: string, runId: string): Promise<SeasonDetails | null> {
+  if (!remoteDetails) return null;
+  try {
+    return await remoteDetails(owner, runId);
+  } catch {
+    return null;
+  }
+}
+
 /** Detalhes de uma temporada: memória → aparelho → nuvem. */
 export function useSeasonDetails(runId: string | null): { details: SeasonDetails | null; loading: boolean } {
   const owner = useHistory((s) => s.owner);

@@ -14,6 +14,7 @@ import { loadGlobalRanking, type GlobalEntry } from '../cloud/globalRanking';
 import { isOwnerAvatar, ownerAvatarUrl } from '../avatars/owner';
 import { navigate } from '../router';
 import { useHistory } from '../history/store';
+import { onRankingPosition } from '../history/hooks';
 
 type Filter = 'geral' | 'diario' | 'semanal' | 'classico' | 'era' | 'mistura' | 'triplice';
 type Scope = 'shared' | 'local' | 'global';
@@ -97,6 +98,8 @@ export function Ranking() {
       if (list) {
         setGlobal(list);
         setGlobalStatus('live');
+        const mine = list.findIndex((e) => e.isMe);
+        if (mine >= 0) onRankingPosition(mine + 1, list[mine].id);
       } else setGlobalStatus('offline');
     });
     return () => {

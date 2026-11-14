@@ -11,7 +11,8 @@ import { readJSON, writeJSON } from '../state/storage';
 import { migrateRunV2 } from '../state/migrate';
 import { useGame, type Run } from '../state/store';
 import { EMPTY_HISTORY, mergeHistory, type HistoryData, type HistoryUpdate } from '../history/engine';
-import { backfillRun } from '../history/hooks';
+import { backfillRun, grantRetroactive, onRankingPosition } from '../history/hooks';
+import { myBestPosition } from './globalRanking';
 import { clearLocalHistory, GUEST, loadLocalDetails, loadLocalHistory, saveLocalDetails, setRemoteDetailsLoader, subscribeHistoryWrites, useHistory } from '../history/store';
 import type { SeasonEntry, TitleRecord, UnlockRecord } from '../history/types';
 import { ConflictError, type CloudRepo, type CloudSave } from './repo';
@@ -111,6 +112,11 @@ class SyncEngine {
       }),
       subscribeHistoryWrites((owner, update) => owner === this.uid && this.enqueueUpdate(update)),
     );
+    // conquistas novas para quem já tinha cumprido (e o top 10 do ranking global)
+    void grantRetroactive();
+    void myBestPosition(10)
+      .then((r) => r && !this.stopped && onRankingPosition(r.position, r.runId))
+      .catch(() => undefined);
     const onHide = () => document.visibilityState === 'hidden' && void this.flush();
     const onOnline = () => void this.flush();
     document.addEventListener('visibilitychange', onHide);

@@ -3,7 +3,7 @@ import { useRoute } from './router';
 import { cloudEnabled } from './cloud/config';
 import { useAuth } from './cloud/auth';
 import { initSession } from './cloud/session';
-import { backfillRun } from './history/hooks';
+import { backfillRun, grantRetroactive } from './history/hooks';
 import { useGame } from './state/store';
 import { UnlockOverlay } from './components/UnlockOverlay';
 import { SyncConflictDialog } from './components/SyncConflictDialog';
@@ -41,10 +41,14 @@ function startApp(): void {
   started = true;
   if (!cloudEnabled) {
     backfillRun(useGame.getState().run);
+    void grantRetroactive();
     return;
   }
   void initSession().then(() => {
-    if (useAuth.getState().status !== 'signed-in') backfillRun(useGame.getState().run);
+    if (useAuth.getState().status !== 'signed-in') {
+      backfillRun(useGame.getState().run);
+      void grantRetroactive();
+    }
   });
 }
 

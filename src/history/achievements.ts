@@ -4,13 +4,17 @@
 // as telas, a sincronização e o Hall dos Lendários passam a considerá-la.
 // Tudo é calculado com dados reais das temporadas do jogador.
 import type { IconName } from '../components/icons';
+import { CLUBS } from '../data/clubs';
+import { isDerby } from '../data/rivals';
+import { DECADES } from '../data/types';
+import { USER_ID } from '../engine/campaign';
 import { COMPETITIONS } from './competitions';
-import type { AchievementTier, SeasonEntry, TitleRecord, UnlockRecord } from './types';
+import type { AchievementTier, MatchLine, SeasonDetails, SeasonEntry, TitleRecord, UnlockRecord } from './types';
 
 export type { AchievementTier } from './types';
 
 /** Momentos do jogo em que as conquistas são verificadas. */
-export type Trigger = 'elenco' | 'partida' | 'titulo' | 'temporada' | 'recorde';
+export type Trigger = 'elenco' | 'partida' | 'titulo' | 'temporada' | 'recorde' | 'ranking';
 
 export interface AchievementContext {
   trigger: Trigger;
@@ -24,6 +28,10 @@ export interface AchievementContext {
   previous: SeasonEntry[];
   /** Todos os títulos do jogador (incluindo os recém-conquistados). */
   titles: TitleRecord[];
+  /** Detalhes da temporada (escalação, jogos com os gols e minutos, artilharia), quando disponíveis. */
+  details?: SeasonDetails | null;
+  /** Melhor posição do jogador no ranking global (só com conta). */
+  ranking?: { position: number; runId: string | null };
 }
 
 export interface AchievementResult {
@@ -257,6 +265,416 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     check: ({ season }) => (season?.champion && season.difficulty === 'lendario' ? done(season.runId, season.points, `${season.teamName} · ${season.points} pontos`) : null),
   },
 ];
+
+
+// --- auxiliares das conquistas de partida e de carreira ----------------------
+
+const runOf = (ctx: AchievementContext): string | null => ctx.season?.runId ?? ctx.match?.runId ?? ctx.squad?.runId ?? null;
+const userSide = (m: MatchLine): 'home' | 'away' => (m.home === USER_ID ? 'home' : 'away');
+/** Placar do ponto de vista do jogador: [a favor, contra]. */
+const forAgainst = (m: MatchLine): [number, number] => (m.home === USER_ID ? [m.score[0], m.score[1]] : [m.score[1], m.score[0]]);
+const rivalOf = (m: MatchLine) => (m.home === USER_ID ? m.awayName : m.homeName);
+const isUserMatch = (m: MatchLine) => m.home === USER_ID || m.away === USER_ID;
+const userMatches = (ctx: AchievementContext): MatchLine[] => (ctx.details?.matches ?? []).filter(isUserMatch);
+/** Pênaltis vencidos pelo jogador na disputa (null se não houve disputa). */
+const shootoutWon = (m: MatchLine): boolean | null => {
+  if (!m.shootout) return null;
+  const [h, a] = m.shootout;
+  return userSide(m) === 'home' ? h > a : a > h;
+};
+const anyTitle = (s: SeasonEntry) => s.champion || s.copaChampion || s.estadualChampion;
+const foreigners = (d: SeasonDetails | null | undefined) => (d?.lineup ?? []).filter((p) => p.nationality !== 'BRA').length;
+const byFinish = (a: SeasonEntry, b: SeasonEntry) => (a.finishedAt ?? '').localeCompare(b.finishedAt ?? '');
+/** Temporadas finalizadas até esta (inclusive), em ordem. */
+const careerSeasons = (ctx: AchievementContext): SeasonEntry[] => {
+  const prev = ctx.previous.filter((s) => s.status === 'finished' && s.runId !== ctx.season?.runId);
+  return [...prev, ...(ctx.season?.status === 'finished' ? [ctx.season] : [])].sort(byFinish);
+};
+/** Gol que deu a vitória (o que pôs o time na frente pela última vez), se houver. */
+function winningGoal(m: MatchLine): { minute: number; name: string } | null {
+  const [f, a] = forAgainst(m);
+  if (f <= a) return null;
+  const side = userSide(m);
+  const goals = m.goals.map((g, i) => ({ g, i })).sort((x, y) => x.g.minute - y.g.minute || x.i - y.i);
+  let us = 0;
+  let them = 0;
+  let decisive: { minute: number; name: string } | null = null;
+  for (const { g } of goals) {
+    const wasAhead = us > them;
+    if (g.side === side) us++;
+    else them++;
+    if (!wasAhead && us > them) decisive = { minute: g.minute, name: g.name };
+  }
+  return us === f && them === a ? decisive : null;
+}
+/** Maior número de gols de um jogador do seu time numa partida. */
+function bestHaul(ctx: AchievementContext): { name: string; goals: number; rival: string } | null {
+  let best: { name: string; goals: number; rival: string } | null = null;
+  for (const m of userMatches(ctx)) {
+    const side = userSide(m);
+    const count = new Map<string, number>();
+    for (const g of m.goals) if (g.side === side) count.set(g.name, (count.get(g.name) ?? 0) + 1);
+    for (const [name, goals] of count) if (!best || goals > best.goals) best = { name, goals, rival: rivalOf(m) };
+  }
+  return best;
+}
+/** Confronto de Copa do Brasil virado: perdeu a ida e passou de fase. */
+function comeback(ctx: AchievementContext): { stage: string; rival: string; agg: [number, number] } | null {
+  const ms = userMatches(ctx).filter((m) => m.comp === 'copa');
+  for (const ida of ms) {
+    if (!/\(ida\)$/.test(ida.label)) continue;
+    const volta = ms.find((m) => m.label === ida.label.replace(/\(ida\)$/, '(volta)'));
+    if (!volta) continue;
+    const [f1, a1] = forAgainst(ida);
+    if (f1 >= a1) continue;
+    const [f2, a2] = forAgainst(volta);
+    const agg: [number, number] = [f1 + f2, a1 + a2];
+    const so = shootoutWon(volta);
+    const advanced = agg[0] > agg[1] || (agg[0] === agg[1] && so === true);
+    if (advanced) return { stage: ida.label.replace(/^Copa do Brasil · /, '').replace(/ \(ida\)$/, ''), rival: rivalOf(ida), agg };
+  }
+  return null;
+}
+/** Clube de um time adversário (pela tabela; nas copas, pelo nome). */
+function clubOfTeam(teamId: string, name: string, d: SeasonDetails | null | undefined): string | null {
+  const row = d?.standings.find((r) => r.team === teamId);
+  if (row?.clubId) return row.clubId;
+  const club = CLUBS.find((c) => name === c.name || name.startsWith(`${c.name} `) || name === c.short);
+  return club?.id ?? null;
+}
+/** Datas (AAAA-MM-DD) dos Desafios Diários concluídos. */
+function dailyDates(seasons: SeasonEntry[]): string[] {
+  const out = new Set<string>();
+  for (const s of seasons) {
+    if (s.mode !== 'diario' || s.status !== 'finished') continue;
+    const m = s.challengeLabel?.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (m) out.add(`${m[3]}-${m[2]}-${m[1]}`);
+  }
+  return [...out].sort();
+}
+/** Maior sequência de dias consecutivos numa lista de datas ordenadas. */
+function longestDayStreak(dates: string[]): number {
+  let best = 0;
+  let cur = 0;
+  let prev: number | null = null;
+  for (const d of dates) {
+    const t = Date.UTC(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, Number(d.slice(8, 10))) / 86400000;
+    cur = prev != null && t - prev === 1 ? cur + 1 : 1;
+    best = Math.max(best, cur);
+    prev = t;
+  }
+  return best;
+}
+/** Maior sequência de títulos brasileiros seguidos (temporadas finalizadas em ordem). */
+function longestTitleStreak(seasons: SeasonEntry[]): number {
+  let best = 0;
+  let cur = 0;
+  for (const s of seasons) {
+    cur = s.champion ? cur + 1 : 0;
+    best = Math.max(best, cur);
+  }
+  return best;
+}
+const eraDecadesWon = (seasons: SeasonEntry[]) => new Set(seasons.filter((s) => s.mode === 'era' && s.champion && s.fixedDecade).map((s) => s.fixedDecade!));
+const brClubsWon = (titles: TitleRecord[]) => new Set(titles.filter((t) => t.competitionId === 'brasileirao' && t.clubId).map((t) => t.clubId!));
+function personsUsed(ctx: AchievementContext): Set<string> {
+  const out = new Set<string>();
+  for (const s of careerSeasons(ctx)) for (const p of s.metrics?.persons ?? []) out.add(p);
+  for (const p of ctx.details?.lineup ?? []) if (ctx.season?.status === 'finished') out.add(p.personId);
+  return out;
+}
+
+ACHIEVEMENT_DEFS.push(
+  // --- montagem do time ------------------------------------------------------
+  {
+    id: 'legiao-estrangeira',
+    name: 'Legião Estrangeira',
+    objective: 'Ganhe um título com 7 ou mais estrangeiros no time titular.',
+    message: ({ value }) => `${value ?? 7} gringos no time titular e taça na mão!`,
+    icon: 'globe',
+    tier: 'ouro',
+    triggers: ['temporada'],
+    check: ({ season, details }) => {
+      if (!season || season.status !== 'finished' || !anyTitle(season)) return null;
+      const n = foreigners(details);
+      return n >= 7 ? done(season.runId, n, `${n} estrangeiros · ${season.teamName}`) : null;
+    },
+  },
+  {
+    id: 'selecao-do-mundo',
+    name: 'Seleção do Mundo',
+    objective: 'Ganhe o Brasileirão com os 11 titulares estrangeiros (possível na Mistura Brasileira).',
+    message: () => 'Onze estrangeiros e o título brasileiro. Uma seleção do mundo!',
+    icon: 'globe',
+    tier: 'lendaria',
+    triggers: ['temporada'],
+    check: ({ season, details }) =>
+      season?.champion && details?.lineup.length && foreigners(details) === details.lineup.length ? done(season.runId, details.lineup.length, `${season.teamName} · 11 estrangeiros`) : null,
+  },
+  {
+    id: 'maquina-do-tempo',
+    name: 'Máquina do Tempo',
+    objective: 'Seja campeão brasileiro com jogadores de 6 ou mais décadas diferentes no time titular.',
+    message: ({ value }) => `Craques de ${value ?? 6} décadas jogando juntos, e campeões!`,
+    icon: 'hourglass',
+    tier: 'prata',
+    triggers: ['temporada'],
+    check: ({ season, details }) => {
+      if (!season?.champion) return null;
+      const n = details ? new Set(details.lineup.map((p) => p.decade)).size : Object.keys(season.metrics?.decadeCounts ?? {}).length;
+      return n >= 6 ? done(season.runId, n, `${n} décadas · ${season.teamName}`) : null;
+    },
+  },
+  {
+    id: 'volta-pelo-brasil',
+    name: 'Volta pelo Brasil',
+    objective: 'Na Mistura Brasileira, seja campeão brasileiro com 11 jogadores de 11 clubes diferentes.',
+    message: () => 'Um jogador de cada canto do país, e o título brasileiro!',
+    icon: 'route',
+    tier: 'ouro',
+    triggers: ['temporada'],
+    check: ({ season, details }) => {
+      if (!season?.champion || season.mode !== 'mistura' || !details?.lineup.length) return null;
+      const n = new Set(details.lineup.map((p) => p.club)).size;
+      return n >= 11 ? done(season.runId, n, `${n} clubes diferentes`) : null;
+    },
+  },
+  {
+    id: 'azarao',
+    name: 'Azarão',
+    objective: 'Ganhe o Brasileirão com overall médio do time titular de 80 ou menos.',
+    message: ({ value }) => `Ninguém apostava num time de overall ${value}. Campeão!`,
+    icon: 'dice',
+    tier: 'ouro',
+    triggers: ['temporada'],
+    check: ({ season }) => {
+      if (!season?.champion) return null;
+      const ovr = Math.round(season.squadOverall);
+      return ovr <= 80 ? done(season.runId, ovr, `Overall médio ${ovr} · ${season.teamName}`) : null;
+    },
+  },
+  {
+    id: 'capitao-artilheiro',
+    name: 'Capitão Artilheiro',
+    objective: 'Termine o Brasileirão com o seu capitão como artilheiro do campeonato.',
+    message: ({ detail }) => `${detail ?? 'O capitão'}: braçadeira e artilharia!`,
+    icon: 'captain',
+    tier: 'prata',
+    triggers: ['temporada'],
+    check: ({ season, details }) => {
+      const ts = details?.leagueTopScorer;
+      const captain = details?.lineup.find((p) => p.captain)?.name ?? season?.captainName;
+      if (!season || season.status !== 'finished' || !ts?.user || !captain || ts.name !== captain) return null;
+      return done(season.runId, ts.goals, `${ts.name}, ${plural(ts.goals, 'gol')}`);
+    },
+  },
+  // --- dentro da temporada -----------------------------------------------------
+  {
+    id: 'aos-45-do-segundo',
+    name: 'Aos 45 do Segundo',
+    objective: 'Vença uma partida com o gol da vitória a partir dos 88 minutos (ou nos acréscimos).',
+    message: ({ detail }) => `${detail ?? 'Gol no finzinho'}. Quem sai antes do apito final perde essa!`,
+    icon: 'clock',
+    tier: 'bronze',
+    triggers: ['partida', 'temporada'],
+    check: (ctx) => {
+      for (const m of userMatches(ctx)) {
+        const g = winningGoal(m);
+        if (g && g.minute >= 88) {
+          const [f, a] = forAgainst(m);
+          return done(runOf(ctx), g.minute, `${g.name} aos ${g.minute}' · ${f} × ${a} no ${rivalOf(m)}`);
+        }
+      }
+      return null;
+    },
+  },
+  {
+    id: 'na-marca-da-cal',
+    name: 'Na Marca da Cal',
+    objective: 'Vença uma disputa de pênaltis num mata-mata de ida e volta.',
+    message: () => 'Frieza na marca da cal: classificado nos pênaltis!',
+    icon: 'target',
+    tier: 'bronze',
+    triggers: ['partida', 'temporada'],
+    check: (ctx) => {
+      const m = userMatches(ctx).find((x) => shootoutWon(x) === true);
+      if (!m) return null;
+      const [h, a] = m.shootout!;
+      const [f, c] = userSide(m) === 'home' ? [h, a] : [a, h];
+      return done(runOf(ctx), f, `${f} × ${c} nos pênaltis contra o ${rivalOf(m)}`);
+    },
+  },
+  {
+    id: 'remontada',
+    name: 'Remontada',
+    objective: 'Passe de fase na Copa do Brasil depois de perder o jogo de ida.',
+    message: ({ detail }) => `${detail ?? 'Virada no confronto'}. A volta foi épica!`,
+    icon: 'comeback',
+    tier: 'ouro',
+    triggers: ['partida', 'temporada'],
+    check: (ctx) => {
+      const c = comeback(ctx);
+      return c ? done(runOf(ctx), c.agg[0] - c.agg[1], `${c.stage}: ${c.agg[0]} × ${c.agg[1]} no agregado contra o ${c.rival}`) : null;
+    },
+  },
+  {
+    id: 'poquer',
+    name: 'Pôquer',
+    objective: 'Tenha um jogador marcando 4 gols ou mais numa mesma partida.',
+    message: ({ detail }) => `${detail ?? 'Quatro gols numa partida'}. Noite inesquecível!`,
+    icon: 'four',
+    tier: 'bronze',
+    triggers: ['partida', 'temporada'],
+    check: (ctx) => {
+      const b = bestHaul(ctx);
+      return b && b.goals >= 4 ? done(runOf(ctx), b.goals, `${b.name} marcou ${b.goals} contra o ${b.rival}`) : null;
+    },
+  },
+  {
+    id: 'paredao',
+    name: 'Paredão',
+    objective: 'Termine o Brasileirão sem sofrer gols em 20 jogos ou mais.',
+    message: ({ value }) => `${value} jogos sem sofrer gols no Brasileirão. Ninguém passa!`,
+    icon: 'glove',
+    tier: 'prata',
+    triggers: ['temporada'],
+    check: ({ season }) => {
+      const n = season?.status === 'finished' ? (season.metrics?.cleanSheets ?? 0) : 0;
+      return n >= 20 ? done(season!.runId, n, `${n} jogos sem sofrer gols`) : null;
+    },
+    progress: ({ finished }) => {
+      const best = maxOf(finished.map((s) => s.metrics?.cleanSheets ?? 0)) ?? 0;
+      return { current: Math.min(best, 20), target: 20, text: `Seu recorde: ${plural(best, 'jogo')} sem sofrer gols no Brasileirão.` };
+    },
+  },
+  {
+    id: 'dono-do-classico',
+    name: 'Dono do Clássico',
+    objective: 'Vença todos os clássicos da temporada contra os rivais do seu clube (pelo menos dois).',
+    message: ({ value }) => `${plural(value ?? 2, 'clássico')}, ${plural(value ?? 2, 'vitória')}. A cidade é sua!`,
+    icon: 'versus',
+    tier: 'prata',
+    triggers: ['temporada'],
+    check: (ctx) => {
+      const { season, details } = ctx;
+      if (!season || season.status !== 'finished' || !season.clubId) return null;
+      const derbies = userMatches(ctx).filter((m) => {
+        const rival = m.home === USER_ID ? clubOfTeam(m.away, m.awayName, details) : clubOfTeam(m.home, m.homeName, details);
+        return isDerby(season.clubId, rival);
+      });
+      if (derbies.length < 2 || !derbies.every((m) => forAgainst(m)[0] > forAgainst(m)[1])) return null;
+      return done(season.runId, derbies.length, `${plural(derbies.length, 'clássico')} vencidos · ${season.teamName}`);
+    },
+  },
+  // --- carreira ------------------------------------------------------------------
+  {
+    id: 'dinastia',
+    name: 'Dinastia',
+    objective: 'Ganhe o Brasileirão em 3 temporadas seguidas.',
+    message: () => 'Tricampeão brasileiro em sequência. Uma dinastia!',
+    icon: 'dynasty',
+    tier: 'ouro',
+    triggers: ['temporada'],
+    check: (ctx) => {
+      if (!ctx.season?.champion) return null;
+      const seasons = careerSeasons(ctx);
+      const i = seasons.findIndex((s) => s.runId === ctx.season!.runId);
+      if (i < 2) return null;
+      return seasons.slice(i - 2, i + 1).every((s) => s.champion) ? done(ctx.season.runId, 3, 'Tricampeão em sequência') : null;
+    },
+    progress: ({ finished }) => {
+      const best = longestTitleStreak([...finished].sort(byFinish));
+      return { current: Math.min(best, 3), target: 3, text: `Sua maior sequência: ${plural(best, 'título', 'títulos')} brasileiros seguidos.` };
+    },
+  },
+  {
+    id: 'volta-ao-mundo-das-eras',
+    name: 'Volta ao Mundo das Eras',
+    objective: `Seja campeão brasileiro na Era Única com cada uma das ${DECADES.length} décadas, dos anos 50 aos anos 2020.`,
+    message: () => 'Campeão em todas as eras do futebol brasileiro!',
+    icon: 'history',
+    tier: 'lendaria',
+    triggers: ['temporada'],
+    check: (ctx) => {
+      if (ctx.season?.mode !== 'era' || !ctx.season.champion) return null;
+      const won = eraDecadesWon(careerSeasons(ctx));
+      return DECADES.every((d) => won.has(d)) ? done(ctx.season.runId, DECADES.length, `${DECADES.length} décadas conquistadas`) : null;
+    },
+    progress: ({ finished }) => {
+      const won = eraDecadesWon(finished);
+      const missing = DECADES.filter((d) => !won.has(d));
+      return {
+        current: won.size,
+        target: DECADES.length,
+        text: missing.length ? `${won.size} de ${DECADES.length} décadas. Faltam: ${missing.map((d) => `anos ${d.slice(2, 4)}`).join(', ')}.` : 'Todas as eras conquistadas.',
+      };
+    },
+  },
+  {
+    id: 'rodando-o-brasil',
+    name: 'Rodando o Brasil',
+    objective: 'Ganhe o Brasileirão com 10 clubes diferentes.',
+    message: () => 'Campeão brasileiro com 10 camisas diferentes!',
+    icon: 'pin',
+    tier: 'ouro',
+    triggers: ['titulo', 'temporada'],
+    check: (ctx) => {
+      const clubs = brClubsWon(ctx.titles);
+      if (clubs.size < 10) return null;
+      const last = [...ctx.titles].filter((t) => t.competitionId === 'brasileirao').sort((a, b) => b.wonAt.localeCompare(a.wonAt))[0];
+      return done(ctx.season?.runId ?? last?.runId ?? null, clubs.size, `${clubs.size} clubes campeões`);
+    },
+    progress: ({ titles }) => {
+      const n = brClubsWon(titles).size;
+      return { current: Math.min(n, 10), target: 10, text: `Campeão brasileiro com ${plural(n, 'clube')} de 10.` };
+    },
+  },
+  {
+    id: 'colecionador',
+    name: 'Colecionador',
+    objective: 'Escale 100 jogadores diferentes somando as suas temporadas.',
+    message: ({ value }) => `${value} jogadores diferentes já vestiram a sua camisa!`,
+    icon: 'cards',
+    tier: 'prata',
+    triggers: ['temporada'],
+    check: (ctx) => {
+      const n = personsUsed(ctx).size;
+      return ctx.season && n >= 100 ? done(ctx.season.runId, n, `${n} jogadores diferentes`) : null;
+    },
+    progress: ({ finished }) => {
+      const n = new Set(finished.flatMap((s) => s.metrics?.persons ?? [])).size;
+      return { current: Math.min(n, 100), target: 100, text: `${plural(n, 'jogador')} diferentes escalados de 100.` };
+    },
+  },
+  {
+    id: 'fiel-ao-desafio',
+    name: 'Fiel ao Desafio',
+    objective: 'Complete o Desafio Diário 7 dias seguidos.',
+    message: () => 'Uma semana inteira de Desafio Diário. Isso é fidelidade!',
+    icon: 'calendar',
+    tier: 'prata',
+    triggers: ['temporada'],
+    check: (ctx) => {
+      if (ctx.season?.mode !== 'diario') return null;
+      const streak = longestDayStreak(dailyDates(careerSeasons(ctx)));
+      return streak >= 7 ? done(ctx.season.runId, streak, `${streak} dias seguidos`) : null;
+    },
+    progress: ({ finished }) => {
+      const best = longestDayStreak(dailyDates(finished));
+      return { current: Math.min(best, 7), target: 7, text: `Sua maior sequência: ${plural(best, 'dia')} seguidos.` };
+    },
+  },
+  {
+    id: 'top-10-11brl',
+    name: 'Top 10 do 11BRL',
+    objective: 'Coloque uma temporada no top 10 do ranking global (é preciso entrar com a sua conta).',
+    message: ({ value }) => `${value}º lugar no ranking global do 11BRL!`,
+    icon: 'podium',
+    tier: 'lendaria',
+    triggers: ['ranking'],
+    check: ({ ranking }) => (ranking && ranking.position >= 1 && ranking.position <= 10 ? done(ranking.runId, ranking.position, `${ranking.position}º no ranking global`) : null),
+  },
+);
 
 export const ACHIEVEMENT_BY_ID: Record<string, AchievementDef> = Object.fromEntries(ACHIEVEMENT_DEFS.map((a) => [a.id, a]));
 

@@ -4,9 +4,11 @@
 import { db } from '../data/db';
 import { USER_ID } from '../engine/campaign';
 import type { Run } from '../state/store';
-import { matchPlayed, seasonAbandoned, seasonFinished, seasonStarted, squadReady, titlesOf, titlesWon } from './engine';
+import { matchPlayed, rankingReached, retroactiveUnlocks, seasonAbandoned, seasonFinished, seasonStarted, squadReady, titlesOf, titlesWon } from './engine';
 import { buildSeasonRecord } from './record';
-import { useHistory } from './store';
+import { loadLocalDetails, loadRemoteDetails, useHistory } from './store';
+import { mergeUnlocks } from './achievements';
+import type { SeasonDetails } from './types';
 
 const now = () => new Date().toISOString();
 const apply = (u: Parameters<ReturnType<typeof useHistory.getState>['apply']>[0], notify = true) => useHistory.getState().apply(u, { notify });
@@ -39,11 +41,14 @@ export function onDaysPlayed(prev: Run, next: Run): void {
   const a = prev.campaign;
   const b = next.campaign;
   if (!a || !b) return;
-  // partidas do jogador que acabaram de terminar
-  for (const um of b.userMatches.slice(a.userMatches.length)) {
+  // partidas do jogador que acabaram de terminar (com os jogos da temporada até aqui,
+  // para as conquistas que olham gols, minutos e pênaltis)
+  const fresh = b.userMatches.slice(a.userMatches.length);
+  const details = fresh.length ? (buildSeasonRecord(next, 'in_progress')?.details ?? null) : null;
+  for (const um of fresh) {
     const i = um.home === USER_ID ? 0 : 1;
     const rivalId = um.home === USER_ID ? um.away : um.home;
-    apply(matchPlayed(data(), { runId: next.id, for: um.result.score[i], against: um.result.score[1 - i], rival: b.teams[rivalId]?.name ?? rivalId }, now()));
+    apply(matchPlayed(data(), { runId: next.id, for: um.result.score[i], against: um.result.score[1 - i], rival: b.teams[rivalId]?.name ?? rivalId }, now(), details));
   }
   // copas decididas durante a temporada
   const cupWon = (b.copa?.champion === USER_ID && a.copa?.champion !== USER_ID) || (b.estadual?.champion === USER_ID && a.estadual?.champion !== USER_ID);
@@ -76,5 +81,42 @@ export function backfillRun(run: Run | null): void {
   } else if (!known) {
     const rec = buildSeasonRecord(run, 'in_progress');
     if (rec) apply(seasonStarted(data(), rec), false);
+  }
+}
+
+/** Ranking global carregado: a melhor posição do jogador (para o top 10). */
+export function onRankingPosition(position: number, runId: string | null): void {
+  apply(rankingReached(data(), { position, runId }, now()));
+}
+
+let retroRunning: string | null = null;
+
+/**
+ * Conquistas novas para quem já as tinha cumprido: revisa as temporadas
+ * finalizadas (detalhes do aparelho ou da nuvem) uma vez por dono.
+ */
+export async function grantRetroactive(): Promise<void> {
+  const st = useHistory.getState();
+  const owner = st.owner;
+  if (retroRunning === owner) return;
+  const finished = st.data.seasons.filter((s) => s.status === 'finished');
+  if (!finished.length) return;
+  retroRunning = owner;
+  try {
+    const details = new Map<string, SeasonDetails | null>();
+    for (const s of finished) {
+      let d: SeasonDetails | null = useHistory.getState().details[s.runId] ?? loadLocalDetails(owner, s.runId);
+      if (!d) d = await loadRemoteDetails(owner, s.runId);
+      details.set(s.runId, d);
+    }
+    if (useHistory.getState().owner !== owner) return;
+    const cur = useHistory.getState().data;
+    const unlocks = retroactiveUnlocks(cur, (id) => details.get(id) ?? null, now());
+    if (!unlocks.length) return;
+    apply({ data: { ...cur, unlocks: mergeUnlocks(cur.unlocks, unlocks) }, newTitles: [], newUnlocks: unlocks, records: [] });
+  } catch {
+    /* tenta de novo no próximo carregamento */
+  } finally {
+    retroRunning = null;
   }
 }

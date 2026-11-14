@@ -75,6 +75,8 @@ export interface SeasonMetrics {
   lossesAll: number;
   /** Quantos titulares de cada década. */
   decadeCounts: Partial<Record<Decade, number>>;
+  /** Jogadores escalados (ids das pessoas), para conquistas de carreira. Ausente em registros antigos. */
+  persons?: string[];
 }
 
 /** Título conquistado (registro permanente). */

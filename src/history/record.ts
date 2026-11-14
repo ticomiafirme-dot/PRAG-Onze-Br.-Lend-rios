@@ -70,6 +70,7 @@ function computeMetrics(matches: MatchLine[], details: Pick<SeasonDetails, 'sequ
     bestCard: best ? { name: best.name, overall: best.overall, club: best.club, decade: best.decade } : null,
     lossesAll: scored.filter(({ s }) => s[0] < s[1]).length,
     decadeCounts,
+    persons: details.lineup.map((p) => p.personId),
   };
 }
 

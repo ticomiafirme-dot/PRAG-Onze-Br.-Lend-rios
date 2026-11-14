@@ -75,10 +75,78 @@ export function squadReady(data: HistoryData, squad: { runId: string; overall: n
   return { ...noChange(withUnlocks(data, unlocks)), newUnlocks: unlocks };
 }
 
-/** Uma partida do jogador terminou. */
-export function matchPlayed(data: HistoryData, match: { runId: string; for: number; against: number; rival: string }, at: string): HistoryUpdate {
-  const unlocks = evaluate(data, { trigger: 'partida', match, previous: [] }, at);
+/**
+ * Uma partida do jogador terminou. `details` (opcional) traz os jogos da
+ * temporada até aqui, com gols e minutos, para as conquistas de partida.
+ */
+export function matchPlayed(
+  data: HistoryData,
+  match: { runId: string; for: number; against: number; rival: string },
+  at: string,
+  details?: SeasonDetails | null,
+): HistoryUpdate {
+  const unlocks = evaluate(data, { trigger: 'partida', match, previous: [], details }, at);
   return { ...noChange(withUnlocks(data, unlocks)), newUnlocks: unlocks };
+}
+
+/** Melhor posição do jogador no ranking global (conquista do top 10). */
+export function rankingReached(data: HistoryData, ranking: { position: number; runId: string | null }, at: string): HistoryUpdate {
+  const unlocks = evaluate(data, { trigger: 'ranking', ranking, previous: [] }, at);
+  return { ...noChange(withUnlocks(data, unlocks)), newUnlocks: unlocks };
+}
+
+/** Conquistas criadas depois do lançamento: valem para quem já as tinha cumprido. */
+export const RETROACTIVE_IDS = new Set([
+  'legiao-estrangeira',
+  'selecao-do-mundo',
+  'maquina-do-tempo',
+  'volta-pelo-brasil',
+  'azarao',
+  'capitao-artilheiro',
+  'aos-45-do-segundo',
+  'na-marca-da-cal',
+  'remontada',
+  'poquer',
+  'paredao',
+  'dono-do-classico',
+  'dinastia',
+  'volta-ao-mundo-das-eras',
+  'rodando-o-brasil',
+  'colecionador',
+  'fiel-ao-desafio',
+]);
+
+/**
+ * Revisa as temporadas já finalizadas (em ordem) e devolve as conquistas
+ * novas que o jogador já tinha cumprido, com a data da temporada em que
+ * cumpriu. `detailsOf` dá os detalhes de cada temporada (ou null).
+ */
+export function retroactiveUnlocks(data: HistoryData, detailsOf: (runId: string) => SeasonDetails | null, now: string): UnlockRecord[] {
+  const have = new Set(data.unlocks.map((u) => u.id));
+  if ([...RETROACTIVE_IDS].every((id) => have.has(id))) return [];
+  const finished = data.seasons
+    .filter((s) => s.status === 'finished')
+    .sort((a, b) => (a.finishedAt ?? '').localeCompare(b.finishedAt ?? ''))
+    .map((s) => {
+      const details = detailsOf(s.runId);
+      // registros antigos não guardavam os jogadores escalados: vêm dos detalhes
+      const season = details && s.metrics && !s.metrics.persons ? { ...s, metrics: { ...s.metrics, persons: details.lineup.map((p) => p.personId) } } : s;
+      return { season, details };
+    });
+  const out: UnlockRecord[] = [];
+  finished.forEach(({ season, details }, i) => {
+    const at = season.finishedAt ?? now;
+    const titles = data.titles.filter((t) => t.wonAt <= at || t.runId === season.runId);
+    const previous = finished.slice(0, i).map((x) => x.season);
+    for (const trigger of ['partida', 'titulo', 'temporada', 'recorde'] as const) {
+      for (const u of evaluateAchievements({ trigger, season, details, previous, titles }, have, at)) {
+        if (!RETROACTIVE_IDS.has(u.id)) continue;
+        have.add(u.id);
+        out.push(u);
+      }
+    }
+  });
+  return out;
 }
 
 /** Títulos conquistados durante a temporada (ex.: estadual decidido antes do Brasileirão). */
@@ -112,7 +180,7 @@ export function seasonFinished(data: HistoryData, record: SeasonRecord, at: stri
   // conquistas: títulos, temporada e recordes
   const unlocks: UnlockRecord[] = [];
   const run = (trigger: AchievementContext['trigger']) => {
-    const u = evaluate(cur, { trigger, season: entry0, previous }, at);
+    const u = evaluate(cur, { trigger, season: entry0, previous, details: record.details }, at);
     cur = withUnlocks(cur, u);
     unlocks.push(...u);
   };
