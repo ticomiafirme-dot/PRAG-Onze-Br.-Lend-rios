@@ -21,10 +21,13 @@
 # As telas do jogo usam "#" (ex.: /#clubes), então o site só tem a página "/".
 # Qualquer outro endereço digitado volta para o início, em vez de dar erro 404.
 # Arquivos que existem (index.html, /assets/...) são servidos normalmente.
+# O jogo mudou para https://11brl.com.br (Cloudflare). Quem abrir o endereço
+# antigo do Netlify é levado para o novo (o "#" da tela é mantido pelo navegador).
 [[redirects]]
   from = "/*"
-  to = "/"
-  status = 302
+  to = "https://11brl.com.br/:splat"
+  status = 301
+  force = true
 
 # Cabeçalhos de cache e segurança: em public/_headers (o mesmo arquivo serve
 # para o Netlify e para o Cloudflare Pages).

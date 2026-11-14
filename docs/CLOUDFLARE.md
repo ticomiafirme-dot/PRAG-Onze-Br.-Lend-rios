@@ -1,4 +1,15 @@
-# Publicar no Cloudflare Pages (grátis, sem limite de publicações por crédito)
+# Publicar no Cloudflare (grátis, sem limite de publicações por crédito)
+
+> **Situação atual:** o jogo está publicado como **Cloudflare Worker**
+> (`wrangler.jsonc`, projeto `onzebrlendario`, branch
+> `claude/eager-planck-3iyvab`), no domínio próprio **https://11brl.com.br**
+> (registrado no registro.br, com os nameservers do Cloudflare). O endereço
+> antigo do Netlify redireciona para o novo quando o Netlify publicar de novo.
+> No Supabase, Site URL = `https://11brl.com.br/` e Redirect URLs com
+> `https://11brl.com.br/**` e `https://www.11brl.com.br/**`.
+>
+> O passo a passo abaixo (Cloudflare Pages) continua valendo para quem
+> preferir o Pages.
 
 O jogo é um site estático (Vite). No Cloudflare Pages ele é publicado direto
 do GitHub: cada `git push` no branch escolhido gera uma versão nova em cerca
