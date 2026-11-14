@@ -1,0 +1,13 @@
+// Publicação como Cloudflare Worker (arquivos estáticos). Só é usada se o
+// projeto for criado em "Workers"; no Cloudflare Pages este arquivo é ignorado
+// (não tem pages_build_output_dir). O "name" precisa ser igual ao nome do
+// projeto no painel do Cloudflare.
+{
+  "name": "onzebrlendario",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    // as telas usam "#": endereços desconhecidos abrem o jogo
+    "not_found_handling": "single-page-application"
+  }
+}
