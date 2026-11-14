@@ -89,7 +89,7 @@ export function Campanha({ id }: { id: string }) {
           <h2>
             {p.name} {p.title ? <StaffBadge title={p.title} /> : null}
           </h2>
-          {p.since && <p className="dim">No PRAG desde {fmtDate(p.since)}</p>}
+          {p.since && <p className="dim">No 11BRL desde {fmtDate(p.since)}</p>}
         </div>
         <div className="public-player-stats">
           <div>

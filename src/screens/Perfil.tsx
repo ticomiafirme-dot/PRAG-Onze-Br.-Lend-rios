@@ -224,7 +224,7 @@ export function Perfil() {
             <h2>Visitante</h2>
           )}
           {signedIn && user.email && <p className="muted">{user.email}</p>}
-          <p className="dim">{signedIn ? `No PRAG desde ${fmtDate(user.createdAt)}` : 'Dados salvos só neste aparelho'}</p>
+          <p className="dim">{signedIn ? `No 11BRL desde ${fmtDate(user.createdAt)}` : 'Dados salvos só neste aparelho'}</p>
         </div>
         {signedIn && <SignOutButton />}
       </section>

@@ -43,7 +43,7 @@ export function Hall() {
               <strong>
                 {signedIn ? user.name : 'Visitante'} <StaffBadge />
               </strong>
-              <span className="dim">{signedIn ? `No PRAG desde ${fmtDate(user.createdAt)}` : 'Coleção salva neste aparelho'}</span>
+              <span className="dim">{signedIn ? `No 11BRL desde ${fmtDate(user.createdAt)}` : 'Coleção salva neste aparelho'}</span>
             </div>
           </div>
           <div className="hall-totals">
