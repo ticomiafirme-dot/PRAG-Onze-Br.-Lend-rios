@@ -516,3 +516,37 @@ table.data tr.me {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------------------- anúncios nas laterais */
+.ad-rail {
+  position: fixed;
+  top: 96px;
+  z-index: 5;
+  width: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: auto;
+}
+
+.ad-rail-left {
+  left: calc((100vw - var(--max-w)) / 4 - 80px);
+}
+
+.ad-rail-right {
+  right: calc((100vw - var(--max-w)) / 4 - 80px);
+}
+
+.ad-rail-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(223, 230, 243, 0.45);
+}
+
+@media (max-width: 1599px) {
+  .ad-rail {
+    display: none;
+  }
+}

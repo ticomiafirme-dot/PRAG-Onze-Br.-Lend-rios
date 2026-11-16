@@ -32,6 +32,7 @@ import { Ranking } from './screens/Ranking';
 import { HowTo } from './screens/HowTo';
 import { Credits } from './screens/Credits';
 import { Campanha } from './screens/Campanha';
+import { AdRails } from './components/AdRails';
 
 let started = false;
 
@@ -133,6 +134,7 @@ export function App() {
     <div className="app">
       <Header />
       <main key={route.path + (route.params.id ?? '')}>{screen}</main>
+      <AdRails />
       <UnlockOverlay />
       <SyncConflictDialog />
       <AuthErrorBar />
