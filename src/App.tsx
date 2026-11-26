@@ -134,7 +134,14 @@ export function App() {
     <div className="app">
       <Header />
       <main key={route.path + (route.params.id ?? '')}>{screen}</main>
-      <AdRails />
+      <AdRails path={route.path} />
+      <footer className="site-footer">
+        <a href="/como-jogar/">Como jogar</a>
+        <a href="/clubes/">Lendas de cada clube</a>
+        <a href="/conquistas/">Conquistas</a>
+        <a href="/sobre/">Sobre</a>
+        <a href="/privacidade.html">Privacidade</a>
+      </footer>
       <UnlockOverlay />
       <SyncConflictDialog />
       <AuthErrorBar />

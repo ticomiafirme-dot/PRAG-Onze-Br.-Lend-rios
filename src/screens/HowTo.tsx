@@ -39,7 +39,7 @@ export function HowTo() {
               Um jogador nunca aparece duas vezes no seu time e só atua na categoria em que jogou de verdade. Dentro da categoria, ocupa qualquer vaga:
               um defensor pode ser zagueiro ou lateral; um meio-campista, volante ou meia; um atacante, ponta ou centroavante.
             </li>
-            <li>Na Era Única, a década é fixa e o sorteio define quais três jogadores aparecem para cada categoria.</li>
+            <li>Na Era Única, a década é fixa e todos os jogadores cadastrados daquela década aparecem em todas as rodadas.</li>
           </ul>
         </section>
         <section className="panel">

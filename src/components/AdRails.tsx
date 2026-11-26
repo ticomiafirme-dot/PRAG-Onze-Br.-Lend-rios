@@ -47,9 +47,12 @@ function AdRail({ side }: { side: 'left' | 'right' }) {
   );
 }
 
-export function AdRails() {
+/** Telas fora da partida (menus, rankings, histórico): nada de anúncio no draft, nas partidas ou na temporada. */
+const AD_PATHS = new Set(['/', '/ranking', '/ranking-conquistas', '/como-jogar', '/creditos', '/hall', '/conquistas', '/historico', '/recordes']);
+
+export function AdRails({ path }: { path: string }) {
   const wide = useWide();
-  if (!SLOT || !wide) return null;
+  if (!SLOT || !wide || !AD_PATHS.has(path)) return null;
   return (
     <>
       <AdRail side="left" />
